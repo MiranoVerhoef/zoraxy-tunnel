@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zoraxy Tunnel</title>
+<link rel="stylesheet" href="/darktheme.css">
+<meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
+<style>
+  /* No :root theme overrides here on purpose — darktheme.css owns them and
+     switches via body.darkTheme / body:not(.darkTheme). Inline fallbacks below
+     only kick in for dev mode where darktheme.css is absent. */
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--theme_bg,#1b1c1f);color:var(--text_color,#f2f3f5);font-size:14px;line-height:1.5;}
+  a{color:var(--theme_highlight,#5b8cff);text-decoration:none;}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;
+    background:var(--theme_advance,#1f2024);padding:1px 5px;border-radius:4px;}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 18px 120px;}
+
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:4px;}
+  .logo{width:30px;height:30px;border-radius:8px;background:var(--theme_highlight,#5b8cff);
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;flex-shrink:0;}
+  .topbar h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em;color:var(--text_color,#f2f3f5);}
+  .topbar .sub{font-size:12px;color:var(--text_color_secondary,#9b9ca3);margin-top:1px;}
+  .chips{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;}
+  .chip{background:var(--theme_bg_primary,#25262b);border:1px solid var(--divider_color,#34363c);
+    padding:5px 11px;border-radius:999px;font-size:12px;color:var(--text_color_secondary,#9b9ca3);}
+  .chip b{color:var(--text_color,#f2f3f5);font-weight:600;}
+
+  .panel{background:var(--theme_bg_primary,#25262b);border:1px solid var(--divider_color,#34363c);
+    border-radius:12px;padding:16px 18px;margin-top:16px;}
+  .panel h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--text_color_secondary,#9b9ca3);font-weight:600;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr;}}
+
+  .fp-row{display:flex;align-items:center;gap:10px;}
+  .fp{flex:1;font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.02em;
+    background:var(--theme_advance,#1f2024);padding:10px 12px;border-radius:8px;border:1px solid var(--divider_color,#34363c);
+    word-break:break-all;color:var(--item_color,#c9cad0);}
+
+  label.fld{display:block;font-size:12px;color:var(--text_color_secondary,#9b9ca3);margin-bottom:5px;}
+  input,select{width:100%;background:var(--input_color,#1a1b1f);color:var(--text_color,#f2f3f5);
+    border:1px solid var(--divider_color,#34363c);border-radius:8px;padding:9px 11px;font-size:14px;
+    font-family:inherit;outline:none;transition:border-color .15s;}
+  input:focus{border-color:var(--theme_highlight,#5b8cff);}
+  button{background:var(--theme_bg_secondary,#3a3b42);color:var(--text_color,#f2f3f5);
+    border:1px solid var(--button_border_color,#3a3b42);border-radius:8px;padding:9px 15px;font-size:13px;
+    cursor:pointer;font-family:inherit;font-weight:500;transition:filter .12s,background .12s;}
+  button:hover{filter:brightness(1.12);}
+  button.primary{background:var(--theme_highlight,#5b8cff);border-color:transparent;color:#fff;font-weight:600;}
+  button.ghost{background:transparent;}
+  button.danger{background:transparent;border-color:#9b3636;color:#e57373;}
+  button.danger:hover{background:#9b3636;color:#fff;}
+  button.sm{padding:5px 10px;font-size:12px;border-radius:6px;}
+  .icbtn{background:var(--theme_advance,#1f2024);border:1px solid var(--divider_color,#34363c);border-radius:8px;
+    padding:9px 11px;cursor:pointer;color:var(--text_color_secondary,#9b9ca3);font-size:14px;}
+  .icbtn:hover{color:var(--text_color,#f2f3f5);}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+  .tcard{background:var(--theme_bg_primary,#25262b);border:1px solid var(--divider_color,#34363c);
+    border-radius:12px;margin-top:14px;overflow:hidden;}
+  .tcard-head{display:flex;align-items:center;gap:12px;padding:14px 18px;flex-wrap:wrap;
+    border-bottom:1px solid var(--divider_color,#34363c);}
+  .tcard-head .nm{font-size:15px;font-weight:650;color:var(--text_color,#f2f3f5);}
+  .tcard-head .tid{font-size:11px;color:var(--text_color_secondary,#9b9ca3);font-family:ui-monospace,Menlo,monospace;}
+  .tcard-head .spacer{flex:1;}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .dot.on{background:var(--buttom_toggle_active,#37d67a);box-shadow:0 0 0 3px rgba(55,214,122,.18);}
+  .dot.off{background:var(--text_color_secondary,#9b9ca3);opacity:.5;}
+  .badge{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:500;
+    background:var(--theme_advance,#1f2024);color:var(--text_color_secondary,#9b9ca3);border:1px solid var(--divider_color,#34363c);}
+  .badge.ok{background:rgba(55,214,122,.16);color:#54e38e;border-color:transparent;}
+  .badge.warn{background:rgba(245,158,11,.16);color:#f59e0b;border-color:transparent;}
+  .badge.off{opacity:.6;}
+
+  .tcard-body{padding:8px 18px 16px;}
+  .empty{color:var(--text_color_secondary,#9b9ca3);font-size:13px;padding:10px 0;}
+
+  table{width:100%;border-collapse:collapse;}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text_color_secondary,#9b9ca3);
+    text-align:left;padding:8px 10px;border-bottom:1px solid var(--divider_color,#34363c);font-weight:600;}
+  td{padding:10px;border-bottom:1px solid var(--divider_color,#34363c);vertical-align:middle;font-size:13px;}
+  tr:last-child td{border-bottom:none;}
+  .path{display:block;font-size:11px;color:var(--text_color_secondary,#9b9ca3);}
+
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;
+    align-items:flex-start;justify-content:center;z-index:80;padding:30px 16px;overflow:auto;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--theme_bg_primary,#25262b);border:1px solid var(--divider_color,#34363c);
+    border-radius:14px;width:100%;max-width:720px;padding:22px;box-shadow:0 24px 70px rgba(0,0,0,.5);}
+  .modal.sm{max-width:520px;}
+  .modal h2{margin:0 0 4px;font-size:17px;color:var(--text_color,#f2f3f5);}
+  .modal .desc{color:var(--text_color_secondary,#9b9ca3);font-size:13px;margin:0 0 16px;}
+  .x{float:right;cursor:pointer;color:var(--text_color_secondary,#9b9ca3);font-size:22px;line-height:1;
+    background:none;border:none;padding:0;margin:-4px -4px 0 0;}
+  .x:hover{color:var(--text_color,#f2f3f5);}
+
+  pre{background:var(--theme_advance,#1f2024);border:1px solid var(--divider_color,#34363c);border-radius:9px;
+    padding:13px 14px;overflow:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px;
+    color:#d7d9de;white-space:pre-wrap;word-break:break-all;margin:0 0 10px;line-height:1.55;}
+  .tabs{display:flex;gap:6px;margin:6px 0 12px;flex-wrap:wrap;}
+  .tabs button{padding:7px 13px;font-size:12.5px;}
+  .tabs button.active{background:var(--theme_highlight,#5b8cff);border-color:transparent;color:#fff;}
+  .note{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.32);color:#f2c078;
+    border-radius:9px;padding:10px 13px;font-size:12.5px;margin-bottom:14px;}
+  .note code{background:rgba(255,255,255,.08);}
+  a.chip.dl{background:var(--theme_highlight,#5b8cff);color:#fff;border-color:transparent;font-weight:600;text-decoration:none;}
+  a.chip.dl:hover{filter:brightness(1.12);}
+  .dlbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--theme_advance,#1f2024);
+    border:1px solid var(--divider_color,#34363c);border-radius:9px;padding:10px 13px;margin-bottom:12px;}
+  .dlbar-lbl{font-size:12.5px;color:var(--text_color,#f2f3f5);font-weight:600;}
+  .dlbar-links{display:flex;gap:6px;flex-wrap:wrap;}
+  .dlbar-links a{font-size:12px;color:var(--theme_highlight,#5b8cff);background:var(--theme_bg_primary,#25262b);
+    border:1px solid var(--divider_color,#34363c);padding:4px 9px;border-radius:6px;text-decoration:none;}
+  .dlbar-links a:hover{filter:brightness(1.15);}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--theme_highlight,#5b8cff);
+    color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;
+    opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:90;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+</style>
+</head>
+<body>
+<script>
+  /* Match Zoraxy's theme exactly: darktheme.css defines the variables under
+     body.darkTheme / body:not(.darkTheme); Zoraxy stores the choice in
+     localStorage['theme']. Toggle the class so the right variables apply. */
+  function applyZoraxyTheme(){
+    document.body.classList.toggle('darkTheme', localStorage.getItem('theme') === 'dark');
+  }
+  applyZoraxyTheme();
+  window.addEventListener('storage', applyZoraxyTheme);
+</script>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="logo">Z</div>
+    <div>
+      <h1>Zoraxy Tunnel</h1>
+      <div class="sub">Self-hosted reverse tunnels — your own Cloudflare Tunnel.</div>
+    </div>
+    <div class="chips" id="chips"><span class="chip">loading…</span></div>
+    <a class="chip dl" href="https://github.com/sniffingsugar/zoraxy-tunnel/releases/latest" target="_blank" rel="noopener" title="Download tunnel-client">⬇ client</a>
+  </div>
+
+  <div class="panel">
+    <h2>Control node</h2>
+    <div class="fp-row" style="margin-bottom:14px">
+      <div class="fp" id="fp">—</div>
+      <button class="icbtn" title="Copy fingerprint" onclick="copyText(STATUS.fingerprint)">copy</button>
+    </div>
+    <div class="grid2">
+      <div>
+        <label class="fld">Server address (clients dial this)</label>
+        <div class="actions">
+          <input id="serverHost" placeholder="tunnel.example.com:9443" style="flex:1">
+          <button onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+      <div>
+        <label class="fld">Ports</label>
+        <div class="fp" style="font-size:13px" id="ports">control :9443 · ingress :9080</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Tunnels</h2>
+    <div class="actions" style="margin-bottom:6px">
+      <input id="newTunnel" placeholder="New tunnel name, e.g. home-server" style="flex:1;min-width:180px">
+      <button class="primary" onclick="createTunnel()">+ Create tunnel</button>
+    </div>
+    <div id="tunnels"><div class="empty">Loading…</div></div>
+  </div>
+
+</div>
+
+<!-- command modal -->
+<div class="overlay" id="cmdModal">
+  <div class="modal">
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h2>Connect your client</h2>
+    <p class="desc">Pick how you want to run <code>tunnel-client</code>, then copy the command.</p>
+    <div class="dlbar">
+      <span class="dlbar-lbl">⬇ Get the client</span>
+      <span class="dlbar-links" id="dlBar"></span>
+    </div>
+    <div class="note" id="tokenNote"></div>
+    <div class="tabs">
+      <button class="active" data-tab="cli" onclick="switchTab('cli')">CLI</button>
+      <button data-tab="docker" onclick="switchTab('docker')">docker run</button>
+      <button data-tab="compose" onclick="switchTab('compose')">docker-compose</button>
+    </div>
+    <div id="tab-cli"><pre id="cmd-cli"></pre><button class="sm" onclick="copyFrom('cmd-cli')">Copy command</button></div>
+    <div id="tab-docker" style="display:none"><pre id="cmd-docker"></pre><button class="sm" onclick="copyFrom('cmd-docker')">Copy command</button></div>
+    <div id="tab-compose" style="display:none"><pre id="cmd-compose"></pre><button class="sm" onclick="copyFrom('cmd-compose')">Copy compose</button></div>
+  </div>
+</div>
+
+<!-- service modal -->
+<div class="overlay" id="svcModal">
+  <div class="modal sm">
+    <button class="x" onclick="closeSvc()">&times;</button>
+    <h2>Register service</h2>
+    <p class="desc">A public host routed through this tunnel to a target on the <b>client</b>.</p>
+    <div style="margin-bottom:12px"><label class="fld">Name</label><input id="svcName" placeholder="webapp"></div>
+    <div style="margin-bottom:12px"><label class="fld">Public host (the domain visitors use)</label><input id="svcHost" placeholder="app.example.com"></div>
+    <div style="margin-bottom:12px"><label class="fld">Path prefix <span style="opacity:.6">(optional)</span></label><input id="svcPath" placeholder="/api"></div>
+    <div style="margin-bottom:14px"><label class="fld">Local target on client</label><input id="svcTarget" placeholder="http://127.0.0.1:3000"></div>
+    <button class="primary" onclick="submitService()" style="width:100%">Register service</button>
+  </div>
+</div>
+
+<!-- generic confirm modal (iframe-safe replacement for window.confirm) -->
+<div class="overlay" id="confirmModal">
+  <div class="modal sm">
+    <h2 id="confirmTitle">Confirm</h2>
+    <p class="desc" id="confirmMsg" style="margin-bottom:18px"></p>
+    <div class="actions" style="justify-content:flex-end">
+      <button class="ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="danger" id="confirmBtn" onclick="runConfirm()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied</div>
+
+<script>
+/* Zoraxy serves plugin UIs under /plugin.ui/<id>/ui/ and does NOT rewrite JS
+   string literals, so compute the API base from the document location. */
+function apiBase(){
+  let p = window.location.pathname.replace(/index\.html$/, '');
+  const i = p.lastIndexOf('/ui/');
+  if (i >= 0) return p.slice(0, i + 4) + 'api/';
+  if (!p.endsWith('/')) p += '/';
+  return p + 'api/';
+}
+const API = apiBase();
+const CSRF = document.querySelector('meta[name="zoraxy.csrf.Token"]').content;
+const RELEASES = 'https://github.com/sniffingsugar/zoraxy-tunnel/releases/latest';
+/* direct binary downloads — filenames match the release.yaml matrix */
+const DL = {
+  'Linux x64':   RELEASES + '/download/tunnel-client_linux_amd64',
+  'Linux arm64': RELEASES + '/download/tunnel-client_linux_arm64',
+  'Windows x64': RELEASES + '/download/tunnel-client_windows_amd64.exe',
+  'macOS arm':   RELEASES + '/download/tunnel-client_darwin_arm64',
+  'macOS x64':   RELEASES + '/download/tunnel-client_darwin_amd64',
+};
+let STATUS = {fingerprint:'', server_host:''};
+let svcTunnelId = null;
+let confirmCb = null;
+let TUNNELS = []; // raw list, so onclick handlers only need to pass ids
+
+async function api(path, opts={}){
+  opts.headers = opts.headers || {};
+  opts.headers['X-CSRF-Token'] = CSRF;
+  if (opts.body) opts.headers['Content-Type'] = 'application/json';
+  try {
+    const r = await fetch(API + path, opts);
+    const t = await r.text();
+    return {ok:r.ok, status:r.status, data: t ? JSON.parse(t) : null};
+  } catch(e){ return {ok:false, status:0, data:null}; }
+}
+
+async function loadStatus(){
+  const {data} = await api('status');
+  if (!data){ document.getElementById('chips').innerHTML = '<span class="chip">API unreachable</span>'; return; }
+  STATUS = data;
+  document.getElementById('fp').textContent = data.fingerprint || '—';
+  document.getElementById('serverHost').value = data.server_host || '';
+  document.getElementById('chips').innerHTML =
+    `<span class="chip"><b>${data.online_count}</b>/${data.tunnel_count} online</span>` +
+    `<span class="chip">control <b>:${data.control_port}</b></span>` +
+    `<span class="chip">ingress <b>:${data.ingress_port}</b></span>`;
+}
+
+async function saveSettings(){
+  const server_host = document.getElementById('serverHost').value.trim();
+  await api('settings', {method:'POST', body: JSON.stringify({server_host})});
+  toast('Saved'); loadStatus();
+}
+
+async function loadTunnels(){
+  const {data, ok} = await api('tunnels');
+  const el = document.getElementById('tunnels');
+  if (!ok){ el.innerHTML = '<div class="empty">Could not load tunnels.</div>'; return; }
+  if (!data || data.length === 0){ el.innerHTML = '<div class="empty">No tunnels yet. Create one to get a connect command.</div>'; return; }
+  TUNNELS = data;
+  el.innerHTML = data.map(renderTunnel).join('');
+}
+
+function renderTunnel(t){
+  const dot = `<span class="dot ${t.online?'on':'off'}"></span>`;
+  const svc = (t.services||[]).map(renderService.bind(null, t.id)).join('');
+  const body = svc
+    ? `<table><tr><th>Service</th><th>Public host</th><th>Client target</th><th>Route</th><th style="text-align:right">Actions</th></tr>${svc}</table>`
+    : '<div class="empty">No services registered yet.</div>';
+  return `
+   <div class="tcard">
+     <div class="tcard-head">
+       ${dot}
+       <span class="nm">${esc(t.name)}</span>
+       <span class="tid">${t.id}</span>
+       <span class="badge">token ${esc(t.token_hint||'')}</span>
+       ${t.enabled?'<span class="badge ok">enabled</span>':'<span class="badge off">disabled</span>'}
+       <span class="spacer"></span>
+       <button class="sm" onclick="tunnelAction('${t.id}','regenerate')">Regenerate token</button>
+       <button class="sm ghost" onclick="tunnelAction('${t.id}','toggle')">${t.enabled?'Disable':'Enable'}</button>
+       <button class="sm danger" onclick="askDelete('${t.id}')">Delete</button>
+     </div>
+     <div class="tcard-body">
+       <div class="actions" style="margin-bottom:10px">
+         <button class="primary sm" onclick="openSvc('${t.id}')">+ Register service</button>
+       </div>
+       ${body}
+     </div>
+   </div>`;
+}
+
+function renderService(tid, s){
+  const installed = !!s.installed_route;
+  const route = installed ? '<span class="badge ok">installed</span>' : '<span class="badge warn">not installed</span>';
+  const routeBtn = installed
+    ? `<button class="sm" onclick="svcAction('${tid}','${s.id}','uninstall')">Uninstall</button>`
+    : `<button class="sm primary" onclick="svcAction('${tid}','${s.id}','install')">Install route</button>`;
+  return `<tr>
+    <td>${esc(s.name||'')}</td>
+    <td class="mono">${esc(s.host)}${s.path?`<span class="path">${esc(s.path)}</span>`:''}</td>
+    <td class="mono">${esc(s.target)}</td>
+    <td>${route}</td>
+    <td style="text-align:right">
+      <div class="actions" style="justify-content:flex-end">
+        ${routeBtn}
+        <button class="sm ghost" onclick="svcAction('${tid}','${s.id}','toggle')">${s.enabled?'On':'Off'}</button>
+        <button class="sm danger" onclick="askDeleteService('${tid}','${s.id}')">Del</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+async function createTunnel(){
+  const name = document.getElementById('newTunnel').value.trim();
+  if (!name) return;
+  const {data, ok} = await api('tunnels', {method:'POST', body: JSON.stringify({name})});
+  if (!ok || !data){ toast('Failed'); return; }
+  document.getElementById('newTunnel').value = '';
+  showCommands(data.token, true);
+  loadStatus(); loadTunnels();
+}
+
+async function tunnelAction(id, action){
+  const {data} = await api('tunnels/action', {method:'POST', body: JSON.stringify({id, action})});
+  if (action==='regenerate' && data && data.token){ showCommands(data.token, true); }
+  loadStatus(); loadTunnels();
+}
+
+/* custom confirm — native window.confirm is blocked in sandboxed plugin iframes */
+function askDelete(id){
+  const t = TUNNELS.find(x=>x.id===id);
+  const name = t ? t.name : id;
+  openConfirm('Delete tunnel?', `Delete tunnel <b>${esc(name)}</b>? Any installed routes are removed automatically.`, async function(){
+    await api('tunnels/action', {method:'POST', body: JSON.stringify({id, action:'delete'})});
+    toast('Deleted'); loadStatus(); loadTunnels();
+  });
+}
+function askDeleteService(tid, sid){
+  const t = TUNNELS.find(x=>x.id===tid);
+  const s = t && (t.services||[]).find(x=>x.id===sid);
+  const label = s ? (s.name||s.host) : sid;
+  openConfirm('Delete service?', `Delete service <b>${esc(label)}</b>?`, async function(){
+    await api('services/action', {method:'POST', body: JSON.stringify({tunnel_id:tid, service_id:sid, action:'delete'})});
+    toast('Deleted'); loadTunnels();
+  });
+}
+function openConfirm(title, msg, cb){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').innerHTML = msg;
+  confirmCb = cb;
+  document.getElementById('confirmModal').classList.add('show');
+}
+function runConfirm(){ closeConfirm(); if (confirmCb) confirmCb(); confirmCb = null; }
+function closeConfirm(){ document.getElementById('confirmModal').classList.remove('show'); }
+
+function openSvc(tid){
+  svcTunnelId = tid;
+  ['svcName','svcHost','svcPath','svcTarget'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('svcModal').classList.add('show');
+}
+function closeSvc(){ document.getElementById('svcModal').classList.remove('show'); }
+async function submitService(){
+  const body = {
+    tunnel_id: svcTunnelId, action:'add',
+    name: document.getElementById('svcName').value.trim(),
+    host: document.getElementById('svcHost').value.trim(),
+    path: document.getElementById('svcPath').value.trim(),
+    target: document.getElementById('svcTarget').value.trim(),
+  };
+  if (!body.host || !body.target){ toast('Host and target required'); return; }
+  const {ok} = await api('services/action', {method:'POST', body: JSON.stringify(body)});
+  closeSvc(); if (ok) toast('Service registered'); loadTunnels();
+}
+async function svcAction(tid, sid, action){
+  const {ok} = await api('services/action', {method:'POST', body: JSON.stringify({tunnel_id:tid, service_id:sid, action})});
+  if (ok) toast(action + ' done'); loadTunnels();
+}
+
+function showCommands(token, fresh){
+  const host = STATUS.server_host || 'tunnel.example.com:9443';
+  const fp = STATUS.fingerprint || '';
+  const tok = token || '<TOKEN>';
+  document.getElementById('cmd-cli').textContent =
+`tunnel-client \\
+  --server ${host} \\
+  --token ${tok} \\
+  --fingerprint "${fp}"`;
+  document.getElementById('cmd-docker').textContent =
+`docker run -d --name tunnel-client --restart unless-stopped \\
+  --network host \\
+  ghcr.io/sniffingsugar/tunnel-client:latest \\
+  --server ${host} --token ${tok} --fingerprint "${fp}"`;
+  document.getElementById('cmd-compose').textContent =
+`# Linux: 127.0.0.1 targets work via host network.
+# macOS/Windows Docker Desktop: drop network_mode and use host.docker.internal.
+services:
+  tunnel-client:
+    image: ghcr.io/sniffingsugar/tunnel-client:latest
+    container_name: tunnel-client
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --server=${host}
+      - --token=${tok}
+      - --fingerprint=${fp}`;
+  document.getElementById('tokenNote').innerHTML = fresh
+    ? 'This token is shown <b>once</b>. Copy it now — only a hash is stored afterwards.'
+    : 'Token hidden. Regenerate to reveal a new one.';
+  document.getElementById('dlBar').innerHTML =
+    Object.entries(DL).map(([k,u])=>`<a href="${u}" target="_blank" rel="noopener">${k}</a>`).join('') +
+    `<a href="${RELEASES}" target="_blank" rel="noopener">all releases</a>`;
+  switchTab('cli');
+  document.getElementById('cmdModal').classList.add('show');
+}
+function switchTab(tab){
+  ['cli','docker','compose'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===tab?'block':'none';
+    document.querySelector(`.tabs button[data-tab="${t}"]`).classList.toggle('active', t===tab);
+  });
+}
+function closeModal(){ document.getElementById('cmdModal').classList.remove('show'); }
+
+/* helpers */
+async function copyText(s){ if(!s) return; try{ await navigator.clipboard.writeText(s); }catch(e){} toast('Copied'); }
+async function copyFrom(id){ await copyText(document.getElementById(id).textContent); }
+function toast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 1500);
+}
+function esc(s){ return String(s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function anyModalOpen(){ return document.querySelectorAll('.overlay.show').length > 0; }
+function inputFocused(){ const a = document.activeElement; return a && (a.tagName==='INPUT'||a.tagName==='SELECT'||a.tagName==='TEXTAREA'); }
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeSvc(); closeConfirm(); } });
+loadStatus(); loadTunnels();
+/* background refresh — slower (15s) and paused while the user is busy so we
+   never yank focus or wipe a half-filled form / open modal. */
+setInterval(()=>{ if (!anyModalOpen() && !inputFocused()){ loadStatus(); loadTunnels(); } }, 15000);
+</script>
+</body>
+</html>
