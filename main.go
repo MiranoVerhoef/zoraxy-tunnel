@@ -21,6 +21,14 @@ const (
 	ingressPort = 9080
 )
 
+const (
+	verMajor = 1
+	verMinor = 0
+	verPatch = 0
+)
+
+var pluginVersion = fmt.Sprintf("v%d.%d.%d", verMajor, verMinor, verPatch)
+
 var pluginSpec = &zp.IntroSpect{
 	ID:          "com.sniffingsugar.zoraxy-tunnel",
 	Name:        "Zoraxy Tunnel",
@@ -28,7 +36,7 @@ var pluginSpec = &zp.IntroSpect{
 	Description: "Cloudflare-Tunnel-style reverse tunnel server for Zoraxy.",
 	URL:         "https://github.com/sniffingsugar/zoraxy-tunnel",
 	Type:        zp.PluginType_Utilities,
-	VersionMajor: 1, VersionMinor: 0, VersionPatch: 0,
+	VersionMajor: verMajor, VersionMinor: verMinor, VersionPatch: verPatch,
 	UIPath: "/ui",
 	PermittedAPIEndpoints: []zp.PermittedAPIEndpoint{
 		{Method: "GET", Endpoint: "/api/proxy/list", Reason: "Check installed routes"},
@@ -71,6 +79,7 @@ func main() {
 		store: store, registry: registry, certs: certs,
 		zPort: zPort, apiKey: config.APIKey,
 		ingressPort: ingressPort, controlPort: controlPort, uiPort: uiPort,
+		version: pluginVersion,
 	}
 
 	mux := http.NewServeMux()

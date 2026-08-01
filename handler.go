@@ -20,6 +20,7 @@ type apiServer struct {
 	ingressPort int
 	controlPort int
 	uiPort     int
+	version    string
 }
 
 const maxBody = 1 << 16 // 64 KiB is plenty for every endpoint here
@@ -32,6 +33,7 @@ type statusResp struct {
 	UIPort      int    `json:"ui_port"`
 	TunnelCount int    `json:"tunnel_count"`
 	OnlineCount int    `json:"online_count"`
+	Version     string `json:"version"`
 }
 
 func (a *apiServer) handleStatus(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +52,7 @@ func (a *apiServer) handleStatus(w http.ResponseWriter, r *http.Request) {
 		UIPort:      a.uiPort,
 		TunnelCount: len(tunnels),
 		OnlineCount: online,
+		Version:     a.version,
 	})
 }
 
