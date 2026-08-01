@@ -109,14 +109,26 @@
   .note{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.32);color:#f2c078;
     border-radius:9px;padding:10px 13px;font-size:12.5px;margin-bottom:14px;}
   .note code{background:rgba(255,255,255,.08);}
-  a.chip.dl{background:var(--theme_highlight,#5b8cff);color:#fff;border-color:transparent;font-weight:600;text-decoration:none;}
-  a.chip.dl:hover{filter:brightness(1.12);}
+  .chip.dl{background:var(--theme_highlight,#5b8cff);color:#fff;border-color:transparent;font-weight:600;
+    text-decoration:none;cursor:pointer;font-family:inherit;font-size:12px;display:inline-flex;align-items:center;gap:6px;}
+  .chip.dl:hover{filter:brightness(1.12);}
+  .chip.dl .caret{font-size:9px;opacity:.8;}
+  .dlwrap{position:relative;}
+  .dlmenu{position:absolute;right:0;top:calc(100% + 6px);min-width:190px;z-index:50;
+    background:var(--theme_bg_primary,#25262b);border:1px solid var(--divider_color,#34363c);
+    border-radius:10px;padding:6px;box-shadow:0 14px 44px rgba(0,0,0,.45);display:none;}
+  .dlmenu.show{display:block;}
+  .dlmenu a{display:block;padding:8px 11px;border-radius:7px;font-size:13px;color:var(--text_color,#f2f3f5);
+    cursor:pointer;text-decoration:none;}
+  .dlmenu a:hover{background:var(--theme_advance,#1f2024);}
+  .dlmenu a.sep{margin-top:4px;border-top:1px solid var(--divider_color,#34363c);border-radius:0;
+    color:var(--text_color_secondary,#9b9ca3);font-size:12px;}
   .dlbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--theme_advance,#1f2024);
     border:1px solid var(--divider_color,#34363c);border-radius:9px;padding:10px 13px;margin-bottom:12px;}
   .dlbar-lbl{font-size:12.5px;color:var(--text_color,#f2f3f5);font-weight:600;}
   .dlbar-links{display:flex;gap:6px;flex-wrap:wrap;}
   .dlbar-links a{font-size:12px;color:var(--theme_highlight,#5b8cff);background:var(--theme_bg_primary,#25262b);
-    border:1px solid var(--divider_color,#34363c);padding:4px 9px;border-radius:6px;text-decoration:none;}
+    border:1px solid var(--divider_color,#34363c);padding:4px 9px;border-radius:6px;text-decoration:none;cursor:pointer;}
   .dlbar-links a:hover{filter:brightness(1.15);}
 
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--theme_highlight,#5b8cff);
@@ -146,7 +158,17 @@
       <div class="sub">Self-hosted reverse tunnels — your own Cloudflare Tunnel.</div>
     </div>
     <div class="chips" id="chips"><span class="chip">loading…</span></div>
-    <a class="chip dl" href="https://github.com/sniffingsugar/zoraxy-tunnel/releases/latest" target="_blank" rel="noopener" title="Download tunnel-client">⬇ client</a>
+    <div class="dlwrap">
+      <button class="chip dl" onclick="toggleDl(event)" title="Download tunnel-client">⬇ client <span id="dlVer"></span> <span class="caret">▾</span></button>
+      <div class="dlmenu" id="dlMenu">
+        <a onclick="dl('tunnel-client_linux_amd64')">Linux x64</a>
+        <a onclick="dl('tunnel-client_linux_arm64')">Linux arm64</a>
+        <a onclick="dl('tunnel-client_windows_amd64.exe')">Windows x64</a>
+        <a onclick="dl('tunnel-client_darwin_arm64')">macOS arm</a>
+        <a onclick="dl('tunnel-client_darwin_amd64')">macOS x64</a>
+        <a class="sep" onclick="dlAll()">All releases</a>
+      </div>
+    </div>
   </div>
 
   <div class="panel">
@@ -243,16 +265,21 @@ function apiBase(){
 }
 const API = apiBase();
 const CSRF = document.querySelector('meta[name="zoraxy.csrf.Token"]').content;
-const RELEASES = 'https://github.com/sniffingsugar/zoraxy-tunnel/releases/latest';
-/* direct binary downloads — filenames match the release.yaml matrix */
-const DL = {
-  'Linux x64':   RELEASES + '/download/tunnel-client_linux_amd64',
-  'Linux arm64': RELEASES + '/download/tunnel-client_linux_arm64',
-  'Windows x64': RELEASES + '/download/tunnel-client_windows_amd64.exe',
-  'macOS arm':   RELEASES + '/download/tunnel-client_darwin_arm64',
-  'macOS x64':   RELEASES + '/download/tunnel-client_darwin_amd64',
-};
-let STATUS = {fingerprint:'', server_host:''};
+const REPO = 'https://github.com/sniffingsugar/zoraxy-tunnel';
+let STATUS = {fingerprint:'', server_host:'', version:''};
+
+function openExternal(url){
+  try { window.parent.open(url, '_blank', 'noopener,noreferrer'); }
+  catch(e){ window.open(url, '_blank'); }
+}
+function dlBase(){ return REPO + '/releases/download/' + (STATUS.version || 'latest') + '/'; }
+function releasesUrl(){ return REPO + '/releases/' + (STATUS.version ? 'tag/' + STATUS.version : 'latest'); }
+function imgTag(){ return STATUS.version || 'latest'; }
+function dl(asset){ closeDl(); openExternal(dlBase() + asset); }
+function dlAll(){ closeDl(); openExternal(releasesUrl()); }
+function toggleDl(e){ e.stopPropagation(); document.getElementById('dlMenu').classList.toggle('show'); }
+function closeDl(){ document.getElementById('dlMenu').classList.remove('show'); }
+document.addEventListener('click', closeDl);
 let svcTunnelId = null;
 let confirmCb = null;
 let TUNNELS = []; // raw list, so onclick handlers only need to pass ids
@@ -274,6 +301,7 @@ async function loadStatus(){
   STATUS = data;
   document.getElementById('fp').textContent = data.fingerprint || '—';
   document.getElementById('serverHost').value = data.server_host || '';
+  document.getElementById('dlVer').textContent = data.version || '';
   document.getElementById('chips').innerHTML =
     `<span class="chip"><b>${data.online_count}</b>/${data.tunnel_count} online</span>` +
     `<span class="chip">control <b>:${data.control_port}</b></span>` +
@@ -422,14 +450,14 @@ function showCommands(token, fresh){
   document.getElementById('cmd-docker').textContent =
 `docker run -d --name tunnel-client --restart unless-stopped \\
   --network host \\
-  ghcr.io/sniffingsugar/tunnel-client:latest \\
+  ghcr.io/sniffingsugar/tunnel-client:${imgTag()} \\
   --server ${host} --token ${tok} --fingerprint "${fp}"`;
   document.getElementById('cmd-compose').textContent =
 `# Linux: 127.0.0.1 targets work via host network.
 # macOS/Windows Docker Desktop: drop network_mode and use host.docker.internal.
 services:
   tunnel-client:
-    image: ghcr.io/sniffingsugar/tunnel-client:latest
+    image: ghcr.io/sniffingsugar/tunnel-client:${imgTag()}
     container_name: tunnel-client
     restart: unless-stopped
     network_mode: host
@@ -440,9 +468,14 @@ services:
   document.getElementById('tokenNote').innerHTML = fresh
     ? 'This token is shown <b>once</b>. Copy it now — only a hash is stored afterwards.'
     : 'Token hidden. Regenerate to reveal a new one.';
+  const dl = dlBase();
   document.getElementById('dlBar').innerHTML =
-    Object.entries(DL).map(([k,u])=>`<a href="${u}" target="_blank" rel="noopener">${k}</a>`).join('') +
-    `<a href="${RELEASES}" target="_blank" rel="noopener">all releases</a>`;
+    `<a onclick="openExternal('${dl}tunnel-client_linux_amd64')">Linux x64</a>` +
+    `<a onclick="openExternal('${dl}tunnel-client_linux_arm64')">Linux arm64</a>` +
+    `<a onclick="openExternal('${dl}tunnel-client_windows_amd64.exe')">Windows x64</a>` +
+    `<a onclick="openExternal('${dl}tunnel-client_darwin_arm64')">macOS arm</a>` +
+    `<a onclick="openExternal('${dl}tunnel-client_darwin_amd64')">macOS x64</a>` +
+    `<a onclick="openExternal('${releasesUrl()}')">all releases</a>`;
   switchTab('cli');
   document.getElementById('cmdModal').classList.add('show');
 }
