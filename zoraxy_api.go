@@ -6,11 +6,15 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
 
 var zoraxyHTTPClient = &http.Client{Timeout: 10 * time.Second}
+
+// slowHTTPClient is for ACME calls that can take a minute or more.
+var slowHTTPClient = &http.Client{Timeout: 180 * time.Second}
 
 // zoraxyClient talks to Zoraxy's internal API on localhost. Auth piggybacks
 // the api_key the host handed us plus the CSRF token + cookie the browser
@@ -28,6 +32,15 @@ func newZoraxyClient(port int, apiKey, csrf, cookie string) *zoraxyClient {
 }
 
 func (c *zoraxyClient) do(method, path string, params url.Values) ([]byte, int, error) {
+	return c.doWith(zoraxyHTTPClient, method, path, params)
+}
+
+// doSlow is do() with the long-timeout client, for ACME calls.
+func (c *zoraxyClient) doSlow(method, path string, params url.Values) ([]byte, int, error) {
+	return c.doWith(slowHTTPClient, method, path, params)
+}
+
+func (c *zoraxyClient) doWith(client *http.Client, method, path string, params url.Values) ([]byte, int, error) {
 	var body io.Reader
 	if params != nil {
 		body = strings.NewReader(params.Encode())
@@ -49,7 +62,7 @@ func (c *zoraxyClient) do(method, path string, params url.Values) ([]byte, int, 
 	if c.cookie != "" {
 		req.Header.Set("Cookie", c.cookie)
 	}
-	resp, err := zoraxyHTTPClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -120,4 +133,66 @@ func routeExists(port int, apiKey, csrf, cookie, host string) bool {
 		}
 	}
 	return false
+}
+
+// extractZoraxyError reads Zoraxy's {"error":"..."} reply, which often ships with HTTP 200.
+func extractZoraxyError(raw []byte) string {
+	var e struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal(raw, &e) == nil {
+		return e.Error
+	}
+	return ""
+}
+
+// acmeGetString returns a Zoraxy endpoint's plain-string reply.
+func (c *zoraxyClient) acmeGetString(path string) (string, error) {
+	raw, code, err := c.do("GET", path, nil)
+	if err != nil {
+		return "", err
+	}
+	if code >= 400 {
+		return "", fmt.Errorf("HTTP %d", code)
+	}
+	if msg := extractZoraxyError(raw); msg != "" {
+		return "", fmt.Errorf("%s", msg)
+	}
+	var s string
+	json.Unmarshal(raw, &s)
+	return s, nil
+}
+
+// issueCertificate mints a cert via Zoraxy's ACME flow; on success it's auto-served (filename match). Wildcards use DNS-01.
+func (c *zoraxyClient) issueCertificate(host string) error {
+	email, err := c.acmeGetString("/api/acme/autoRenew/email")
+	if err != nil {
+		return err
+	}
+	if email == "" {
+		return fmt.Errorf("ACME email not set — set it in Zoraxy ACME settings")
+	}
+	ca, err := c.acmeGetString("/api/acme/autoRenew/ca")
+	if err != nil || ca == "" {
+		ca = "Let's Encrypt"
+	}
+	filename := strings.ReplaceAll(host, "*", "_")
+	q := url.Values{
+		"domains":  {host},
+		"filename": {filename},
+		"email":    {email},
+		"ca":       {ca},
+		"dns":      {strconv.FormatBool(strings.HasPrefix(host, "*"))},
+	}
+	raw, code, err := c.doSlow("GET", "/api/acme/obtainCert?"+q.Encode(), nil)
+	if err != nil {
+		return err
+	}
+	if msg := extractZoraxyError(raw); msg != "" {
+		return fmt.Errorf("%s", msg)
+	}
+	if code >= 400 || strings.TrimSpace(string(raw)) != "true" {
+		return fmt.Errorf("certificate not issued (HTTP %d): %s", code, strings.TrimSpace(string(raw)))
+	}
+	return nil
 }

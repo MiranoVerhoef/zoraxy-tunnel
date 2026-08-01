@@ -251,6 +251,20 @@
   </div>
 </div>
 
+<!-- install route (optionally issue an SSL cert too) -->
+<div class="overlay" id="installModal">
+  <div class="modal sm">
+    <h2 id="installTitle">Install route</h2>
+    <p class="desc" id="installMsg" style="margin-bottom:18px"></p>
+    <div class="note" id="installNote">Issuing a certificate can take up to 2 minutes and uses your Zoraxy ACME settings. Wildcard hosts (*.domain) require DNS to be configured in Zoraxy.</div>
+    <div class="actions" style="justify-content:flex-end">
+      <button class="ghost" onclick="closeInstall()">Cancel</button>
+      <button class="sm" onclick="doInstall(false)">Route only</button>
+      <button class="sm primary" onclick="doInstall(true)">Route + SSL cert</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">Copied</div>
 
 <script>
@@ -291,7 +305,9 @@ async function api(path, opts={}){
   try {
     const r = await fetch(API + path, opts);
     const t = await r.text();
-    return {ok:r.ok, status:r.status, data: t ? JSON.parse(t) : null};
+    let data = null;
+    if (t){ try { data = JSON.parse(t); } catch(e){ data = {error: t}; } }
+    return {ok:r.ok, status:r.status, data};
   } catch(e){ return {ok:false, status:0, data:null}; }
 }
 
@@ -356,7 +372,7 @@ function renderService(tid, s){
   const route = installed ? '<span class="badge ok">installed</span>' : '<span class="badge warn">not installed</span>';
   const routeBtn = installed
     ? `<button class="sm" onclick="svcAction('${tid}','${s.id}','uninstall')">Uninstall</button>`
-    : `<button class="sm primary" onclick="svcAction('${tid}','${s.id}','install')">Install route</button>`;
+    : `<button class="sm primary" onclick="askInstall('${tid}','${s.id}')">Install route</button>`;
   return `<tr>
     <td>${esc(s.name||'')}</td>
     <td class="mono">${esc(s.host)}${s.path?`<span class="path">${esc(s.path)}</span>`:''}</td>
@@ -434,8 +450,33 @@ async function submitService(){
   closeSvc(); if (ok) toast('Service registered'); loadTunnels();
 }
 async function svcAction(tid, sid, action){
-  const {ok} = await api('services/action', {method:'POST', body: JSON.stringify({tunnel_id:tid, service_id:sid, action})});
-  if (ok) toast(action + ' done'); loadTunnels();
+  const {ok, data} = await api('services/action', {method:'POST', body: JSON.stringify({tunnel_id:tid, service_id:sid, action})});
+  if (ok) toast(action + ' done');
+  else if (data && data.error) toast(data.error);
+  loadTunnels();
+}
+
+/* install route: ask whether to also issue an SSL cert */
+let installTunnelId = null, installServiceId = null;
+function askInstall(tid, sid){
+  const t = TUNNELS.find(x=>x.id===tid);
+  const s = t && (t.services||[]).find(x=>x.id===sid);
+  const host = s ? (s.host||'') : '';
+  installTunnelId = tid; installServiceId = sid;
+  document.getElementById('installMsg').innerHTML = `Install a Zoraxy route for <b>${esc(host)}</b>? Also request an SSL certificate?`;
+  document.getElementById('installModal').classList.add('show');
+}
+function closeInstall(){ document.getElementById('installModal').classList.remove('show'); }
+async function doInstall(issueCert){
+  const tid = installTunnelId, sid = installServiceId;
+  closeInstall();
+  if (tid === null) return;
+  installTunnelId = null; installServiceId = null;
+  if (issueCert) toast('Issuing certificate… can take up to 2 min');
+  const {ok, data} = await api('services/action', {method:'POST', body: JSON.stringify({tunnel_id:tid, service_id:sid, action:'install', issue_cert:issueCert})});
+  if (ok) toast(issueCert ? 'installed + certificate issued' : 'installed');
+  else if (data && data.error) toast(data.error);
+  loadTunnels();
 }
 
 function showCommands(token, fresh){
@@ -499,7 +540,7 @@ function esc(s){ return String(s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&
 function anyModalOpen(){ return document.querySelectorAll('.overlay.show').length > 0; }
 function inputFocused(){ const a = document.activeElement; return a && (a.tagName==='INPUT'||a.tagName==='SELECT'||a.tagName==='TEXTAREA'); }
 
-document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeSvc(); closeConfirm(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeSvc(); closeConfirm(); closeInstall(); } });
 loadStatus(); loadTunnels();
 /* background refresh — slower (15s) and paused while the user is busy so we
    never yank focus or wipe a half-filled form / open modal. */
