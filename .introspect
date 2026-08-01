@@ -6,7 +6,7 @@
   "url": "https://github.com/sniffingsugar/zoraxy-tunnel",
   "type": 1,
   "version_major": 1,
-  "version_minor": 0,
+  "version_minor": 1,
   "version_patch": 0,
   "ui_path": "/ui",
   "permitted_api_endpoints": [

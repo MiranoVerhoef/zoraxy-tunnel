@@ -23,7 +23,7 @@ const (
 
 const (
 	verMajor = 1
-	verMinor = 0
+	verMinor = 1
 	verPatch = 0
 )
 
