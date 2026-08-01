@@ -24,6 +24,21 @@
       "method": "POST",
       "endpoint": "/api/proxy/del",
       "reason": "Remove a service route"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/acme/autoRenew/email",
+      "reason": "Read the ACME email configured in Zoraxy"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/acme/autoRenew/ca",
+      "reason": "Read the user's preferred ACME CA"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/acme/obtainCert",
+      "reason": "Issue an SSL certificate for an installed route"
     }
   ]
 }

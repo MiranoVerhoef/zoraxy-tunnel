@@ -198,6 +198,7 @@ type serviceActionBody struct {
 	Host      string `json:"host"`
 	Path      string `json:"path"`
 	Target    string `json:"target"`
+	IssueCert bool   `json:"issue_cert"`
 }
 
 func (a *apiServer) handleServiceAction(w http.ResponseWriter, r *http.Request) {
@@ -212,7 +213,7 @@ func (a *apiServer) handleServiceAction(w http.ResponseWriter, r *http.Request) 
 	case "delete":
 		a.deleteService(w, r, body.TunnelID, body.ServiceID)
 	case "install":
-		a.installService(w, r, body.TunnelID, body.ServiceID)
+		a.installService(w, r, &body)
 	case "uninstall":
 		a.uninstallService(w, r, body.TunnelID, body.ServiceID)
 	case "toggle":
@@ -269,13 +270,13 @@ func (a *apiServer) deleteService(w http.ResponseWriter, r *http.Request, tunnel
 	writeJSON(w, toView(t, a.registry.online(t.ID)))
 }
 
-func (a *apiServer) installService(w http.ResponseWriter, r *http.Request, tunnelID, serviceID string) {
-	t, ok := a.store.tunnel(tunnelID)
+func (a *apiServer) installService(w http.ResponseWriter, r *http.Request, b *serviceActionBody) {
+	t, ok := a.store.tunnel(b.TunnelID)
 	if !ok {
 		http.Error(w, "tunnel not found", http.StatusNotFound)
 		return
 	}
-	svc, idx := findService(t, serviceID)
+	svc, idx := findService(t, b.ServiceID)
 	if idx < 0 {
 		http.Error(w, "service not found", http.StatusNotFound)
 		return
@@ -294,6 +295,14 @@ func (a *apiServer) installService(w http.ResponseWriter, r *http.Request, tunne
 	if err := a.store.updateTunnel(t); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	// Issue after the route is saved, so a cert failure still leaves the route installed.
+	if b.IssueCert {
+		z := newZoraxyClient(a.zPort, a.apiKey, csrf, cookie)
+		if err := z.issueCertificate(svc.Host); err != nil {
+			http.Error(w, "route installed, but certificate failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	writeJSON(w, toView(t, a.registry.online(t.ID)))
 }
