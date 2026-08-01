@@ -24,7 +24,7 @@ const (
 const (
 	verMajor = 1
 	verMinor = 1
-	verPatch = 0
+	verPatch = 1
 )
 
 var pluginVersion = fmt.Sprintf("v%d.%d.%d", verMajor, verMinor, verPatch)
@@ -42,6 +42,9 @@ var pluginSpec = &zp.IntroSpect{
 		{Method: "GET", Endpoint: "/api/proxy/list", Reason: "Check installed routes"},
 		{Method: "POST", Endpoint: "/api/proxy/add", Reason: "Install a service route"},
 		{Method: "POST", Endpoint: "/api/proxy/del", Reason: "Remove a service route"},
+		{Method: "GET", Endpoint: "/api/acme/autoRenew/email", Reason: "Read the ACME email configured in Zoraxy"},
+		{Method: "GET", Endpoint: "/api/acme/autoRenew/ca", Reason: "Read the user's preferred ACME CA"},
+		{Method: "GET", Endpoint: "/api/acme/obtainCert", Reason: "Issue an SSL certificate for an installed route"},
 	},
 }
 
@@ -58,7 +61,8 @@ func main() {
 	}
 	uiPort := config.Port
 
-	pluginDir := filepath.Dir(exePath())
+	pluginDir := workingDir()
+	log.Printf("[tunnel] data dir: %s", pluginDir)
 	if icon, err := webFS.ReadFile("icon.png"); err == nil {
 		os.WriteFile(filepath.Join(pluginDir, "icon.png"), icon, 0644)
 	}
@@ -121,4 +125,12 @@ func exePath() string {
 		return exe
 	}
 	return "."
+}
+
+// workingDir returns the directory the plugin should store its state in.
+func workingDir() string {
+	if wd, err := os.Getwd(); err == nil {
+		return wd
+	}
+	return filepath.Dir(exePath())
 }
