@@ -65,7 +65,9 @@ In the dashboard:
 
 1. Set **Server address** to where clients reach your control port, e.g.
    `tunnel.example.com:9443` (port-forward/expose `9443` to the internet).
-2. Note the **fingerprint**.
+2. Optionally set the **Default Zoraxy TAG** used for newly registered services.
+   It defaults to `ZoraxyTunnel` and can be overridden per service.
+3. Note the **fingerprint**.
 
 ### 4. Create a tunnel + connect a client
 
@@ -119,12 +121,18 @@ Inside a tunnel, **Register service**:
 - **Public host** — e.g. `app.example.com` (the domain the world visits)
 - **Path prefix** — optional, e.g. `/api`
 - **Local target** — what the *client* dials, e.g. `http://127.0.0.1:3000`
+- **Zoraxy TAG(s)** — optional comma-separated tags applied when the route is installed
+- **Skip TLS certificate verification** — optional for HTTPS targets using a self-signed or otherwise untrusted certificate
 
 Then click **Install route**. The plugin creates a Zoraxy proxy rule
-`app.example.com → 127.0.0.1:9080` for you. Deleting the service or the tunnel
-removes that route automatically.
+`app.example.com → 127.0.0.1:9080` for you and applies the configured tags.
+Existing services can be edited without deleting and recreating them; when the
+public host of an installed service changes, the managed Zoraxy route is moved
+to the new host. Deleting the service or tunnel removes that route automatically.
 
-Public HTTP(S) and WebSockets are both supported and streamed.
+Public HTTP(S) and WebSockets are both supported and streamed. TLS verification
+is enabled for HTTPS targets by default and can be disabled per service when
+needed.
 
 ## Requirements
 
