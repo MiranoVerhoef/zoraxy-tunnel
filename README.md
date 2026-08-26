@@ -4,6 +4,10 @@ A self-hosted, Cloudflare-Tunnel-style reverse tunnel for [Zoraxy](https://githu
 Run the plugin on your Zoraxy box, expose one TLS port, and reach services
 behind NAT/firewalls from anywhere — without an external account.
 
+This fork is published independently as **Zoraxy Tunnel - Mirano** with plugin ID
+`com.miranoverhoef.zoraxy-tunnel`. It uses its own releases, plugin-store entry,
+and container image and does not update from the upstream plugin ID.
+
 ```
 Browser ──▶ Zoraxy (TLS) ──▶ plugin ingress :9080
                                    │  (yamux stream over TLS)
@@ -40,18 +44,23 @@ a hash).
 ### 1. Build
 
 ```bash
-git clone https://github.com/sniffingsugar/zoraxy-tunnel
+git clone https://github.com/MiranoVerhoef/zoraxy-tunnel
 cd zoraxy-tunnel
 go build -o zoraxy-tunnel .          # the plugin
 go build -o tunnel-client ./client   # the client
 ```
 
 Pre-built binaries for both are published under
-[releases](https://github.com/sniffingsugar/zoraxy-tunnel/releases).
+[releases](https://github.com/MiranoVerhoef/zoraxy-tunnel/releases).
 
 ### 2. Install the plugin
 
-Drop the binary into Zoraxy's plugin folder (folder name must equal binary name):
+For a clean switch from the upstream plugin, uninstall the old
+`com.sniffingsugar.zoraxy-tunnel` installation first. This fork has its own
+plugin ID and store identity, so reinstalling is the intended migration path.
+
+For a manual binary installation, drop the binary into Zoraxy's plugin folder
+(folder name must equal binary name):
 
 ```
 plugins/zoraxy-tunnel/zoraxy-tunnel
@@ -86,7 +95,7 @@ tunnel-client \
 ```bash
 docker run -d --name tunnel-client --restart unless-stopped \
   --network host \
-  ghcr.io/sniffingsugar/tunnel-client:latest \
+  ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest \
   --server tunnel.example.com:9443 \
   --token zt_… \
   --fingerprint "AB:CD:EF:…"
@@ -96,7 +105,7 @@ docker run -d --name tunnel-client --restart unless-stopped \
 ```yaml
 services:
   tunnel-client:
-    image: ghcr.io/sniffingsugar/tunnel-client:latest
+    image: ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest
     container_name: tunnel-client
     restart: unless-stopped
     network_mode: host          # Linux: 127.0.0.1 targets work as-is
@@ -133,6 +142,17 @@ to the new host. Deleting the service or tunnel removes that route automatically
 Public HTTP(S) and WebSockets are both supported and streamed. TLS verification
 is enabled for HTTPS targets by default and can be disabled per service when
 needed.
+
+## Custom Zoraxy plugin store
+
+Add this source in **App Store Settings → Plugin Store Sources**:
+
+```text
+https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/directories/index2.json
+```
+
+The custom source publishes the independent plugin ID and downloads releases
+only from this repository.
 
 ## Requirements
 
