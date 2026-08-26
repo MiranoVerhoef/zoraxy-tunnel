@@ -14,14 +14,18 @@ import (
 	"time"
 )
 
+const defaultServiceTag = "ZoraxyTunnel"
+
 type Service struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Host          string `json:"host"`           // public hostname the Zoraxy rule + ingress dispatch on
-	Path          string `json:"path,omitempty"` // optional path prefix; empty matches any
-	Target        string `json:"target"`         // client-local upstream, e.g. http://127.0.0.1:3000
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Host           string `json:"host"`                      // public hostname the Zoraxy rule + ingress dispatch on
+	Path           string `json:"path,omitempty"`            // optional path prefix; empty matches any
+	Target         string `json:"target"`                    // client-local upstream, e.g. http://127.0.0.1:3000
+	SkipTLSVerify  bool   `json:"skip_tls_verify,omitempty"` // allow self-signed/untrusted HTTPS targets on the client
+	Tag            string `json:"tag,omitempty"`             // comma-separated Zoraxy tags applied to the installed route
 	InstalledRoute string `json:"installed_route,omitempty"` // rootname when a Zoraxy rule exists, "" otherwise
-	Enabled       bool   `json:"enabled"`
+	Enabled        bool   `json:"enabled"`
 }
 
 type Tunnel struct {
@@ -35,7 +39,8 @@ type Tunnel struct {
 }
 
 type configFile struct {
-	ServerHost string   `json:"server_host"` // public addr clients dial, e.g. tunnel.example.com:9443
+	ServerHost string   `json:"server_host"`           // public addr clients dial, e.g. tunnel.example.com:9443
+	DefaultTag string   `json:"default_tag,omitempty"` // default Zoraxy tag for newly registered services
 	Tunnels    []Tunnel `json:"tunnels"`
 }
 
@@ -46,7 +51,10 @@ type Store struct {
 }
 
 func newStore(dir string) *Store {
-	return &Store{path: filepath.Join(dir, "config.json")}
+	return &Store{
+		path: filepath.Join(dir, "config.json"),
+		data: configFile{DefaultTag: defaultServiceTag},
+	}
 }
 
 func (s *Store) Load() error {
@@ -82,6 +90,26 @@ func (s *Store) serverHost() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.data.ServerHost
+}
+
+func (s *Store) defaultTag() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.DefaultTag
+}
+
+func (s *Store) settings() (serverHost, defaultTag string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.ServerHost, s.data.DefaultTag
+}
+
+func (s *Store) setSettings(host, defaultTag string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data.ServerHost = strings.TrimSpace(host)
+	s.data.DefaultTag = strings.TrimSpace(defaultTag)
+	return s.saveLocked()
 }
 
 func (s *Store) setServerHost(host string) error {
