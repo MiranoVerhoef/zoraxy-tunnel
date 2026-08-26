@@ -26,6 +26,11 @@
       "reason": "Remove a service route"
     },
     {
+      "method": "POST",
+      "endpoint": "/api/proxy/setTags",
+      "reason": "Assign tags to installed tunnel routes"
+    },
+    {
       "method": "GET",
       "endpoint": "/api/acme/autoRenew/email",
       "reason": "Read the ACME email configured in Zoraxy"
