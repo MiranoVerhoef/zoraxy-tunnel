@@ -146,12 +146,13 @@ type AuthResp struct {
 // RequestHead is what the server pushes down a fresh data stream for each
 // incoming HTTP request the ingress receives.
 type RequestHead struct {
-	Target      string            `json:"target"`        // client-local upstream, e.g. http://127.0.0.1:3000
-	Method      string            `json:"method"`
-	URL         string            `json:"url"`           // path + query
-	Host        string            `json:"host"`
-	Headers     map[string]string `json:"headers"`
-	IsWebSocket bool              `json:"is_websocket"`
+	Target        string            `json:"target"`          // client-local upstream, e.g. http://127.0.0.1:3000
+	Method        string            `json:"method"`
+	URL           string            `json:"url"`             // path + query
+	Host          string            `json:"host"`
+	Headers       map[string]string `json:"headers"`
+	IsWebSocket   bool              `json:"is_websocket"`
+	SkipTLSVerify bool              `json:"skip_tls_verify"` // service opted into accepting untrusted upstream TLS
 }
 
 // ResponseHead is the client's status line + headers back to the server.
