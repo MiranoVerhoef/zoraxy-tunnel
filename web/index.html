@@ -48,6 +48,9 @@
     border:1px solid var(--divider_color,#34363c);border-radius:8px;padding:9px 11px;font-size:14px;
     font-family:inherit;outline:none;transition:border-color .15s;}
   input:focus{border-color:var(--theme_highlight,#5b8cff);}
+  input[type="checkbox"]{width:auto;margin:0;accent-color:var(--theme_highlight,#5b8cff);}
+  .checkrow{display:flex;align-items:flex-start;gap:9px;color:var(--text_color,#f2f3f5);font-size:13px;cursor:pointer;}
+  .checkrow span{line-height:1.35;}
   button{background:var(--theme_bg_secondary,#3a3b42);color:var(--text_color,#f2f3f5);
     border:1px solid var(--button_border_color,#3a3b42);border-radius:8px;padding:9px 15px;font-size:13px;
     cursor:pointer;font-family:inherit;font-weight:500;transition:filter .12s,background .12s;}
@@ -86,7 +89,7 @@
     text-align:left;padding:8px 10px;border-bottom:1px solid var(--divider_color,#34363c);font-weight:600;}
   td{padding:10px;border-bottom:1px solid var(--divider_color,#34363c);vertical-align:middle;font-size:13px;}
   tr:last-child td{border-bottom:none;}
-  .path{display:block;font-size:11px;color:var(--text_color_secondary,#9b9ca3);}
+  .path,.meta{display:block;font-size:11px;color:var(--text_color_secondary,#9b9ca3);}
 
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;
     align-items:flex-start;justify-content:center;z-index:80;padding:30px 16px;overflow:auto;}
@@ -135,6 +138,22 @@
     color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;
     opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:90;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  /* Zoraxy's light highlight is intentionally pale. Dark text and stronger
+     status colors keep plugin controls readable without changing its theme. */
+  body:not(.darkTheme) a{color:#2f6f9f;}
+  body:not(.darkTheme) .logo,
+  body:not(.darkTheme) button.primary,
+  body:not(.darkTheme) .tabs button.active,
+  body:not(.darkTheme) .chip.dl,
+  body:not(.darkTheme) .toast{color:#17324d;}
+  body:not(.darkTheme) pre{color:var(--text_color,#414141);}
+  body:not(.darkTheme) .note{background:#fff8e6;border-color:#e7c46a;color:#72510d;}
+  body:not(.darkTheme) .note code{background:rgba(0,0,0,.06);color:inherit;}
+  body:not(.darkTheme) .badge.ok{background:rgba(1,160,75,.12);color:#176b3a;}
+  body:not(.darkTheme) .badge.warn{background:rgba(210,126,0,.12);color:#8a5a00;}
+  body:not(.darkTheme) button.danger{border-color:#d92d20;color:#b42318;}
+  body:not(.darkTheme) button.danger:hover{background:#b42318;color:#fff;}
 </style>
 </head>
 <body>
@@ -180,14 +199,18 @@
     <div class="grid2">
       <div>
         <label class="fld">Server address (clients dial this)</label>
-        <div class="actions">
-          <input id="serverHost" placeholder="tunnel.example.com:9443" style="flex:1">
-          <button onclick="saveSettings()">Save</button>
-        </div>
+        <input id="serverHost" placeholder="tunnel.example.com:9443">
+      </div>
+      <div>
+        <label class="fld">Default Zoraxy TAG <span style="opacity:.6">(optional, comma-separated)</span></label>
+        <input id="defaultTag" placeholder="ZoraxyTunnel">
       </div>
       <div>
         <label class="fld">Ports</label>
         <div class="fp" style="font-size:13px" id="ports">control :9443 · ingress :9080</div>
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button onclick="saveSettings()" style="width:100%">Save settings</button>
       </div>
     </div>
   </div>
@@ -229,13 +252,18 @@
 <div class="overlay" id="svcModal">
   <div class="modal sm">
     <button class="x" onclick="closeSvc()">&times;</button>
-    <h2>Register service</h2>
+    <h2 id="svcModalTitle">Register service</h2>
     <p class="desc">A public host routed through this tunnel to a target on the <b>client</b>.</p>
     <div style="margin-bottom:12px"><label class="fld">Name</label><input id="svcName" placeholder="webapp"></div>
     <div style="margin-bottom:12px"><label class="fld">Public host (the domain visitors use)</label><input id="svcHost" placeholder="app.example.com"></div>
     <div style="margin-bottom:12px"><label class="fld">Path prefix <span style="opacity:.6">(optional)</span></label><input id="svcPath" placeholder="/api"></div>
-    <div style="margin-bottom:14px"><label class="fld">Local target on client</label><input id="svcTarget" placeholder="http://127.0.0.1:3000"></div>
-    <button class="primary" onclick="submitService()" style="width:100%">Register service</button>
+    <div style="margin-bottom:12px"><label class="fld">Local target on client</label><input id="svcTarget" placeholder="http://127.0.0.1:3000"></div>
+    <div style="margin-bottom:14px"><label class="fld">Zoraxy TAG(s) <span style="opacity:.6">(optional, comma-separated)</span></label><input id="svcTag" placeholder="ZoraxyTunnel"></div>
+    <label class="checkrow" style="margin-bottom:16px">
+      <input type="checkbox" id="svcSkipTLS">
+      <span><b>Skip TLS certificate verification</b><br><span class="meta">Only use for HTTPS targets with a self-signed or otherwise untrusted certificate.</span></span>
+    </label>
+    <button class="primary" id="svcSubmitBtn" onclick="submitService()" style="width:100%">Register service</button>
   </div>
 </div>
 
@@ -280,7 +308,7 @@ function apiBase(){
 const API = apiBase();
 const CSRF = document.querySelector('meta[name="zoraxy.csrf.Token"]').content;
 const REPO = 'https://github.com/sniffingsugar/zoraxy-tunnel';
-let STATUS = {fingerprint:'', server_host:'', version:''};
+let STATUS = {fingerprint:'', server_host:'', default_tag:'', version:''};
 
 function openExternal(url){
   try { window.parent.open(url, '_blank', 'noopener,noreferrer'); }
@@ -295,6 +323,7 @@ function toggleDl(e){ e.stopPropagation(); document.getElementById('dlMenu').cla
 function closeDl(){ document.getElementById('dlMenu').classList.remove('show'); }
 document.addEventListener('click', closeDl);
 let svcTunnelId = null;
+let svcServiceId = null;
 let confirmCb = null;
 let TUNNELS = []; // raw list, so onclick handlers only need to pass ids
 
@@ -317,6 +346,7 @@ async function loadStatus(){
   STATUS = data;
   document.getElementById('fp').textContent = data.fingerprint || '—';
   document.getElementById('serverHost').value = data.server_host || '';
+  document.getElementById('defaultTag').value = data.default_tag || '';
   document.getElementById('dlVer').textContent = data.version || '';
   document.getElementById('chips').innerHTML =
     `<span class="chip"><b>${data.online_count}</b>/${data.tunnel_count} online</span>` +
@@ -326,17 +356,20 @@ async function loadStatus(){
 
 async function saveSettings(){
   const server_host = document.getElementById('serverHost').value.trim();
-  await api('settings', {method:'POST', body: JSON.stringify({server_host})});
-  toast('Saved'); loadStatus();
+  const default_tag = document.getElementById('defaultTag').value.trim();
+  const {ok, data} = await api('settings', {method:'POST', body: JSON.stringify({server_host, default_tag})});
+  if (ok) toast('Saved');
+  else if (data && data.error) toast(data.error);
+  loadStatus();
 }
 
 async function loadTunnels(){
   const {data, ok} = await api('tunnels');
   const el = document.getElementById('tunnels');
   if (!ok){ el.innerHTML = '<div class="empty">Could not load tunnels.</div>'; return; }
-  if (!data || data.length === 0){ el.innerHTML = '<div class="empty">No tunnels yet. Create one to get a connect command.</div>'; return; }
-  TUNNELS = data;
-  el.innerHTML = data.map(renderTunnel).join('');
+  TUNNELS = data || [];
+  if (TUNNELS.length === 0){ el.innerHTML = '<div class="empty">No tunnels yet. Create one to get a connect command.</div>'; return; }
+  el.innerHTML = TUNNELS.map(renderTunnel).join('');
 }
 
 function renderTunnel(t){
@@ -373,14 +406,19 @@ function renderService(tid, s){
   const routeBtn = installed
     ? `<button class="sm" onclick="svcAction('${tid}','${s.id}','uninstall')">Uninstall</button>`
     : `<button class="sm primary" onclick="askInstall('${tid}','${s.id}')">Install route</button>`;
+  const targetMeta = [
+    s.skip_tls_verify ? 'TLS verification skipped' : '',
+    s.tag ? `TAG: ${esc(s.tag)}` : ''
+  ].filter(Boolean).map(x=>`<span class="meta">${x}</span>`).join('');
   return `<tr>
     <td>${esc(s.name||'')}</td>
     <td class="mono">${esc(s.host)}${s.path?`<span class="path">${esc(s.path)}</span>`:''}</td>
-    <td class="mono">${esc(s.target)}</td>
+    <td class="mono">${esc(s.target)}${targetMeta}</td>
     <td>${route}</td>
     <td style="text-align:right">
       <div class="actions" style="justify-content:flex-end">
         ${routeBtn}
+        <button class="sm" onclick="openSvc('${tid}','${s.id}')">Edit</button>
         <button class="sm ghost" onclick="svcAction('${tid}','${s.id}','toggle')">${s.enabled?'On':'Off'}</button>
         <button class="sm danger" onclick="askDeleteService('${tid}','${s.id}')">Del</button>
       </div>
@@ -431,23 +469,51 @@ function openConfirm(title, msg, cb){
 function runConfirm(){ closeConfirm(); if (confirmCb) confirmCb(); confirmCb = null; }
 function closeConfirm(){ document.getElementById('confirmModal').classList.remove('show'); }
 
-function openSvc(tid){
+function openSvc(tid, sid=null){
   svcTunnelId = tid;
-  ['svcName','svcHost','svcPath','svcTarget'].forEach(i=>document.getElementById(i).value='');
+  svcServiceId = sid;
+  const t = TUNNELS.find(x=>x.id===tid);
+  const s = sid && t ? (t.services||[]).find(x=>x.id===sid) : null;
+  if (s){
+    document.getElementById('svcName').value = s.name || '';
+    document.getElementById('svcHost').value = s.host || '';
+    document.getElementById('svcPath').value = s.path || '';
+    document.getElementById('svcTarget').value = s.target || '';
+    document.getElementById('svcTag').value = s.tag || '';
+    document.getElementById('svcSkipTLS').checked = !!s.skip_tls_verify;
+    document.getElementById('svcModalTitle').textContent = 'Edit service';
+    document.getElementById('svcSubmitBtn').textContent = 'Save changes';
+  }else{
+    ['svcName','svcHost','svcPath','svcTarget'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('svcTag').value = STATUS.default_tag || '';
+    document.getElementById('svcSkipTLS').checked = false;
+    document.getElementById('svcModalTitle').textContent = 'Register service';
+    document.getElementById('svcSubmitBtn').textContent = 'Register service';
+  }
   document.getElementById('svcModal').classList.add('show');
 }
-function closeSvc(){ document.getElementById('svcModal').classList.remove('show'); }
+function closeSvc(){
+  document.getElementById('svcModal').classList.remove('show');
+  svcTunnelId = null;
+  svcServiceId = null;
+}
 async function submitService(){
+  const editing = !!svcServiceId;
   const body = {
-    tunnel_id: svcTunnelId, action:'add',
+    tunnel_id: svcTunnelId,
+    service_id: svcServiceId || '',
+    action: editing ? 'edit' : 'add',
     name: document.getElementById('svcName').value.trim(),
     host: document.getElementById('svcHost').value.trim(),
     path: document.getElementById('svcPath').value.trim(),
     target: document.getElementById('svcTarget').value.trim(),
+    tag: document.getElementById('svcTag').value.trim(),
+    skip_tls_verify: document.getElementById('svcSkipTLS').checked,
   };
   if (!body.host || !body.target){ toast('Host and target required'); return; }
-  const {ok} = await api('services/action', {method:'POST', body: JSON.stringify(body)});
-  closeSvc(); if (ok) toast('Service registered'); loadTunnels();
+  const {ok, data} = await api('services/action', {method:'POST', body: JSON.stringify(body)});
+  if (ok){ closeSvc(); toast(editing ? 'Service updated' : 'Service registered'); loadTunnels(); }
+  else if (data && data.error) toast(data.error);
 }
 async function svcAction(tid, sid, action){
   const {ok, data} = await api('services/action', {method:'POST', body: JSON.stringify({tunnel_id:tid, service_id:sid, action})});
