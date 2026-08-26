@@ -15,12 +15,22 @@ import (
 	"zoraxy-tunnel/wire"
 )
 
-var upstreamClient = &http.Client{
-	Timeout: 0, // requests can be long-lived; tunnel handles its own liveness
-	CheckRedirect: func(*http.Request, []*http.Request) error {
-		return http.ErrUseLastResponse // never rewrite — the browser sees the real 3xx
-	},
+func newUpstreamClient(skipTLSVerify bool) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: skipTLSVerify}
+	return &http.Client{
+		Timeout:   0, // requests can be long-lived; tunnel handles its own liveness
+		Transport: transport,
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse // never rewrite — the browser sees the real 3xx
+		},
+	}
 }
+
+var (
+	upstreamClient         = newUpstreamClient(false)
+	insecureUpstreamClient = newUpstreamClient(true)
+)
 
 // handleStream is spawned per yamux stream the server opens. It reads the
 // request head and dispatches to the HTTP or websocket relay.
@@ -52,7 +62,11 @@ func relayHTTP(stream io.ReadWriteCloser, head wire.RequestHead) {
 		req.Header.Set(k, v)
 	}
 
-	resp, err := upstreamClient.Do(req)
+	client := upstreamClient
+	if head.SkipTLSVerify {
+		client = insecureUpstreamClient
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		writeErr(stream, http.StatusBadGateway, err.Error())
 		return
@@ -85,7 +99,7 @@ func relayWebsocket(stream io.ReadWriteCloser, head wire.RequestHead) {
 
 	var conn net.Conn
 	if strings.EqualFold(u.Scheme, "https") {
-		conn, err = tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: true})
+		conn, err = tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: head.SkipTLSVerify})
 	} else {
 		conn, err = net.DialTimeout("tcp", host, 10*time.Second)
 	}
@@ -219,9 +233,9 @@ func parseStatus(line string) int {
 // The server side already de-frames, so here we frame toward the server and
 // de-frame toward the socket.
 type biPipe struct {
-	conn     net.Conn
-	initial  []byte
-	stream   io.ReadWriteCloser
+	conn    net.Conn
+	initial []byte
+	stream  io.ReadWriteCloser
 }
 
 func newBiPipe(conn net.Conn, initial []byte, stream io.ReadWriteCloser) *biPipe {
