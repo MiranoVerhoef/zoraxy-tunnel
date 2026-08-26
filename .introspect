@@ -1,12 +1,13 @@
 {
-  "id": "com.sniffingsugar.zoraxy-tunnel",
-  "name": "Zoraxy Tunnel",
-  "author": "sniffingsugar",
+  "id": "com.miranoverhoef.zoraxy-tunnel",
+  "name": "Zoraxy Tunnel - Mirano",
+  "author": "Mirano Verhoef",
+  "author_contact": "https://github.com/MiranoVerhoef",
   "description": "Cloudflare-Tunnel-style reverse tunnel server for Zoraxy.",
-  "url": "https://github.com/sniffingsugar/zoraxy-tunnel",
+  "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel",
   "type": 1,
   "version_major": 1,
-  "version_minor": 2,
+  "version_minor": 3,
   "version_patch": 0,
   "ui_path": "/ui",
   "permitted_api_endpoints": [
