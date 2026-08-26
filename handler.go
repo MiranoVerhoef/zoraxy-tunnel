@@ -6,21 +6,22 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
 // apiServer wires the /ui/api/* endpoints to the store, live sessions and the
 // Zoraxy back-channel.
 type apiServer struct {
-	store      *Store
-	registry   *sessionRegistry
-	certs      *certManager
-	zPort      int
-	apiKey     string
+	store       *Store
+	registry    *sessionRegistry
+	certs       *certManager
+	zPort       int
+	apiKey      string
 	ingressPort int
 	controlPort int
-	uiPort     int
-	version    string
+	uiPort      int
+	version     string
 }
 
 const maxBody = 1 << 16 // 64 KiB is plenty for every endpoint here
@@ -28,6 +29,7 @@ const maxBody = 1 << 16 // 64 KiB is plenty for every endpoint here
 type statusResp struct {
 	Fingerprint string `json:"fingerprint"`
 	ServerHost  string `json:"server_host"`
+	DefaultTag  string `json:"default_tag"`
 	IngressPort int    `json:"ingress_port"`
 	ControlPort int    `json:"control_port"`
 	UIPort      int    `json:"ui_port"`
@@ -47,6 +49,7 @@ func (a *apiServer) handleStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, statusResp{
 		Fingerprint: a.certs.Fingerprint(),
 		ServerHost:  a.store.serverHost(),
+		DefaultTag:  a.store.defaultTag(),
 		IngressPort: a.ingressPort,
 		ControlPort: a.controlPort,
 		UIPort:      a.uiPort,
@@ -58,19 +61,26 @@ func (a *apiServer) handleStatus(w http.ResponseWriter, r *http.Request) {
 
 func (a *apiServer) handleSettings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
-		writeJSON(w, map[string]string{"server_host": a.store.serverHost()})
+		serverHost, defaultTag := a.store.settings()
+		writeJSON(w, map[string]string{"server_host": serverHost, "default_tag": defaultTag})
 		return
 	}
-	var body struct{ ServerHost string `json:"server_host"` }
+	var body struct {
+		ServerHost string `json:"server_host"`
+		DefaultTag string `json:"default_tag"`
+	}
 	if err := decode(r, &body); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := a.store.setServerHost(body.ServerHost); err != nil {
+	if err := a.store.setSettings(body.ServerHost, body.DefaultTag); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, map[string]string{"server_host": body.ServerHost})
+	writeJSON(w, map[string]string{
+		"server_host": a.store.serverHost(),
+		"default_tag": a.store.defaultTag(),
+	})
 }
 
 // tunnelView is what we hand to the UI. Token is only present at creation or
@@ -191,14 +201,16 @@ func (a *apiServer) toggleTunnel(w http.ResponseWriter, r *http.Request, id stri
 }
 
 type serviceActionBody struct {
-	TunnelID  string `json:"tunnel_id"`
-	ServiceID string `json:"service_id"`
-	Action    string `json:"action"`
-	Name      string `json:"name"`
-	Host      string `json:"host"`
-	Path      string `json:"path"`
-	Target    string `json:"target"`
-	IssueCert bool   `json:"issue_cert"`
+	TunnelID      string  `json:"tunnel_id"`
+	ServiceID     string  `json:"service_id"`
+	Action        string  `json:"action"`
+	Name          string  `json:"name"`
+	Host          string  `json:"host"`
+	Path          string  `json:"path"`
+	Target        string  `json:"target"`
+	SkipTLSVerify bool    `json:"skip_tls_verify"`
+	Tag           *string `json:"tag"`
+	IssueCert     bool    `json:"issue_cert"`
 }
 
 func (a *apiServer) handleServiceAction(w http.ResponseWriter, r *http.Request) {
@@ -210,6 +222,8 @@ func (a *apiServer) handleServiceAction(w http.ResponseWriter, r *http.Request) 
 	switch body.Action {
 	case "add":
 		a.addService(w, r, &body)
+	case "edit":
+		a.editService(w, r, &body)
 	case "delete":
 		a.deleteService(w, r, body.TunnelID, body.ServiceID)
 	case "install":
@@ -237,10 +251,81 @@ func (a *apiServer) addService(w http.ResponseWriter, r *http.Request, b *servic
 		http.Error(w, "tunnel not found", http.StatusNotFound)
 		return
 	}
+	tag := a.store.defaultTag()
+	if b.Tag != nil {
+		tag = strings.TrimSpace(*b.Tag)
+	}
 	t.Services = append(t.Services, Service{
 		ID: newID("s_"), Name: b.Name, Host: b.Host, Path: b.Path,
-		Target: b.Target, Enabled: true,
+		Target: b.Target, SkipTLSVerify: b.SkipTLSVerify, Tag: tag, Enabled: true,
 	})
+	if err := a.store.updateTunnel(t); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, toView(t, a.registry.online(t.ID)))
+}
+
+func (a *apiServer) editService(w http.ResponseWriter, r *http.Request, b *serviceActionBody) {
+	if err := validateTarget(b.Target); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if b.Host == "" {
+		http.Error(w, "host required", http.StatusBadRequest)
+		return
+	}
+	t, ok := a.store.tunnel(b.TunnelID)
+	if !ok {
+		http.Error(w, "tunnel not found", http.StatusNotFound)
+		return
+	}
+	old, idx := findService(t, b.ServiceID)
+	if idx < 0 {
+		http.Error(w, "service not found", http.StatusNotFound)
+		return
+	}
+
+	updated := old
+	updated.Name = b.Name
+	updated.Host = b.Host
+	updated.Path = b.Path
+	updated.Target = b.Target
+	updated.SkipTLSVerify = b.SkipTLSVerify
+	if b.Tag != nil {
+		updated.Tag = strings.TrimSpace(*b.Tag)
+	}
+
+	if old.InstalledRoute != "" {
+		if a.apiKey == "" {
+			http.Error(w, "plugin has no Zoraxy API key", http.StatusForbidden)
+			return
+		}
+		csrf, cookie := extractCSRF(r), extractCookie(r)
+		if !strings.EqualFold(old.InstalledRoute, updated.Host) {
+			target := fmt.Sprintf("127.0.0.1:%d", a.ingressPort)
+			if err := installRoute(a.zPort, a.apiKey, csrf, cookie, updated.Host, target); err != nil {
+				http.Error(w, "could not move installed route: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if err := setRouteTags(a.zPort, a.apiKey, csrf, cookie, updated.Host, updated.Tag); err != nil {
+				_ = removeRoute(a.zPort, a.apiKey, csrf, cookie, updated.Host)
+				http.Error(w, "could not tag new route: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if err := removeRoute(a.zPort, a.apiKey, csrf, cookie, old.InstalledRoute); err != nil {
+				_ = removeRoute(a.zPort, a.apiKey, csrf, cookie, updated.Host)
+				http.Error(w, "could not remove previous route: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			updated.InstalledRoute = updated.Host
+		} else if err := setRouteTags(a.zPort, a.apiKey, csrf, cookie, old.InstalledRoute, updated.Tag); err != nil {
+			http.Error(w, "could not update route tags: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	t.Services[idx] = updated
 	if err := a.store.updateTunnel(t); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -295,6 +380,12 @@ func (a *apiServer) installService(w http.ResponseWriter, r *http.Request, b *se
 	if err := a.store.updateTunnel(t); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if svc.Tag != "" {
+		if err := setRouteTags(a.zPort, a.apiKey, csrf, cookie, svc.Host, svc.Tag); err != nil {
+			http.Error(w, "route installed, but tag assignment failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	// Issue after the route is saved, so a cert failure still leaves the route installed.
 	if b.IssueCert {
