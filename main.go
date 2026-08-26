@@ -23,19 +23,20 @@ const (
 
 const (
 	verMajor = 1
-	verMinor = 2
+	verMinor = 3
 	verPatch = 0
 )
 
 var pluginVersion = fmt.Sprintf("v%d.%d.%d", verMajor, verMinor, verPatch)
 
 var pluginSpec = &zp.IntroSpect{
-	ID:          "com.sniffingsugar.zoraxy-tunnel",
-	Name:        "Zoraxy Tunnel",
-	Author:      "sniffingsugar",
-	Description: "Cloudflare-Tunnel-style reverse tunnel server for Zoraxy.",
-	URL:         "https://github.com/sniffingsugar/zoraxy-tunnel",
-	Type:        zp.PluginType_Utilities,
+	ID:            "com.miranoverhoef.zoraxy-tunnel",
+	Name:          "Zoraxy Tunnel - Mirano",
+	Author:        "Mirano Verhoef",
+	AuthorContact: "https://github.com/MiranoVerhoef",
+	Description:   "Cloudflare-Tunnel-style reverse tunnel server for Zoraxy.",
+	URL:           "https://github.com/MiranoVerhoef/zoraxy-tunnel",
+	Type:          zp.PluginType_Utilities,
 	VersionMajor: verMajor, VersionMinor: verMinor, VersionPatch: verPatch,
 	UIPath: "/ui",
 	PermittedAPIEndpoints: []zp.PermittedAPIEndpoint{
