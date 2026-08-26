@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zoraxy Tunnel</title>
+<title>Zoraxy Tunnel - Mirano</title>
 <link rel="stylesheet" href="/darktheme.css">
 <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
 <style>
@@ -173,7 +173,7 @@
   <div class="topbar">
     <div class="logo">Z</div>
     <div>
-      <h1>Zoraxy Tunnel</h1>
+      <h1>Zoraxy Tunnel - Mirano</h1>
       <div class="sub">Self-hosted reverse tunnels — your own Cloudflare Tunnel.</div>
     </div>
     <div class="chips" id="chips"><span class="chip">loading…</span></div>
@@ -307,7 +307,7 @@ function apiBase(){
 }
 const API = apiBase();
 const CSRF = document.querySelector('meta[name="zoraxy.csrf.Token"]').content;
-const REPO = 'https://github.com/sniffingsugar/zoraxy-tunnel';
+const REPO = 'https://github.com/MiranoVerhoef/zoraxy-tunnel';
 let STATUS = {fingerprint:'', server_host:'', default_tag:'', version:''};
 
 function openExternal(url){
@@ -557,14 +557,14 @@ function showCommands(token, fresh){
   document.getElementById('cmd-docker').textContent =
 `docker run -d --name tunnel-client --restart unless-stopped \\
   --network host \\
-  ghcr.io/sniffingsugar/tunnel-client:${imgTag()} \\
+  ghcr.io/miranoverhoef/zoraxy-tunnel-client:${imgTag()} \\
   --server ${host} --token ${tok} --fingerprint "${fp}"`;
   document.getElementById('cmd-compose').textContent =
 `# Linux: 127.0.0.1 targets work via host network.
 # macOS/Windows Docker Desktop: drop network_mode and use host.docker.internal.
 services:
   tunnel-client:
-    image: ghcr.io/sniffingsugar/tunnel-client:${imgTag()}
+    image: ghcr.io/miranoverhoef/zoraxy-tunnel-client:${imgTag()}
     container_name: tunnel-client
     restart: unless-stopped
     network_mode: host
