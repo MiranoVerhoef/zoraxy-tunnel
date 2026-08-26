@@ -28,6 +28,17 @@ jobs:
           TAG=$(jq -r '"v\(.version_major).\(.version_minor).\(.version_patch)"' .introspect)
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
+      - name: Validate store metadata
+        run: |
+          jq -e --slurpfile intro .introspect '
+            .[0].PluginIntroSpect.id == $intro[0].id and
+            .[0].PluginIntroSpect.name == $intro[0].name and
+            .[0].PluginIntroSpect.author == $intro[0].author and
+            .[0].PluginIntroSpect.version_major == $intro[0].version_major and
+            .[0].PluginIntroSpect.version_minor == $intro[0].version_minor and
+            .[0].PluginIntroSpect.version_patch == $intro[0].version_patch
+          ' directories/index2.json
+
       - name: Build plugin + client
         run: |
           for PKG in "zoraxy-tunnel:." "tunnel-client:./client"; do
@@ -85,5 +96,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/miranoverhoef/tunnel-client:latest
-            ghcr.io/miranoverhoef/tunnel-client:${{ steps.version.outputs.tag }}
+            ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest
+            ghcr.io/miranoverhoef/zoraxy-tunnel-client:${{ steps.version.outputs.tag }}
