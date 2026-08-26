@@ -20,7 +20,7 @@ var slowHTTPClient = &http.Client{Timeout: 180 * time.Second}
 // the api_key the host handed us plus the CSRF token + cookie the browser
 // already holds (forwarded from the UI request).
 type zoraxyClient struct {
-	baseURL                 string
+	baseURL              string
 	apiKey, csrf, cookie string
 }
 
@@ -84,16 +84,19 @@ func extractCookie(r *http.Request) string { return r.Header.Get("Cookie") }
 // plugin's ingress port, so Zoraxy forwards tunneled traffic our way.
 func installRoute(port int, apiKey, csrf, cookie, host, ingressTarget string) error {
 	z := newZoraxyClient(port, apiKey, csrf, cookie)
-	_, code, err := z.do("POST", "/api/proxy/add", url.Values{
-		"type":       {"host"},
-		"rootname":   {host},
-		"ep":         {ingressTarget},
-		"tls":        {"false"},
-		"access":     {"default"},
-		"enableUtm":  {"false"},
+	raw, code, err := z.do("POST", "/api/proxy/add", url.Values{
+		"type":      {"host"},
+		"rootname":  {host},
+		"ep":        {ingressTarget},
+		"tls":       {"false"},
+		"access":    {"default"},
+		"enableUtm": {"false"},
 	})
 	if err != nil {
 		return err
+	}
+	if msg := extractZoraxyError(raw); msg != "" {
+		return fmt.Errorf("%s", msg)
 	}
 	if code >= 400 {
 		return fmt.Errorf("zoraxy add route HTTP %d", code)
@@ -103,12 +106,36 @@ func installRoute(port int, apiKey, csrf, cookie, host, ingressTarget string) er
 
 func removeRoute(port int, apiKey, csrf, cookie, host string) error {
 	z := newZoraxyClient(port, apiKey, csrf, cookie)
-	_, code, err := z.do("POST", "/api/proxy/del", url.Values{"ep": {host}})
+	raw, code, err := z.do("POST", "/api/proxy/del", url.Values{"ep": {host}})
 	if err != nil {
 		return err
 	}
+	if msg := extractZoraxyError(raw); msg != "" {
+		return fmt.Errorf("%s", msg)
+	}
 	if code >= 400 {
 		return fmt.Errorf("zoraxy del route HTTP %d", code)
+	}
+	return nil
+}
+
+// setRouteTags replaces all tags on a host proxy rule. tags is the same
+// comma-separated value accepted by Zoraxy's built-in tag editor; an empty
+// value clears the tags from the rule.
+func setRouteTags(port int, apiKey, csrf, cookie, host, tags string) error {
+	z := newZoraxyClient(port, apiKey, csrf, cookie)
+	raw, code, err := z.do("POST", "/api/proxy/setTags", url.Values{
+		"rootname": {host},
+		"tags":     {tags},
+	})
+	if err != nil {
+		return err
+	}
+	if msg := extractZoraxyError(raw); msg != "" {
+		return fmt.Errorf("%s", msg)
+	}
+	if code >= 400 {
+		return fmt.Errorf("zoraxy set tags HTTP %d", code)
 	}
 	return nil
 }
