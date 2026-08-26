@@ -42,12 +42,13 @@ func (g *ingressServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	isWS := isWebSocketUpgrade(r)
 	head := wire.RequestHead{
-		Target:      service.Target,
-		Method:      r.Method,
-		URL:         r.URL.RequestURI(),
-		Host:        r.Host,
-		Headers:     flattenHeaders(r.Header),
-		IsWebSocket: isWS,
+		Target:        service.Target,
+		Method:        r.Method,
+		URL:           r.URL.RequestURI(),
+		Host:          r.Host,
+		Headers:       flattenHeaders(r.Header),
+		IsWebSocket:   isWS,
+		SkipTLSVerify: service.SkipTLSVerify,
 	}
 
 	stream, err := g.registry.forward(tunnelID, head, r.Body)
