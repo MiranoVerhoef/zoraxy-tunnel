@@ -42,6 +42,7 @@ var pluginSpec = &zp.IntroSpect{
 		{Method: "GET", Endpoint: "/api/proxy/list", Reason: "Check installed routes"},
 		{Method: "POST", Endpoint: "/api/proxy/add", Reason: "Install a service route"},
 		{Method: "POST", Endpoint: "/api/proxy/del", Reason: "Remove a service route"},
+		{Method: "POST", Endpoint: "/api/proxy/setTags", Reason: "Assign tags to installed tunnel routes"},
 		{Method: "GET", Endpoint: "/api/acme/autoRenew/email", Reason: "Read the ACME email configured in Zoraxy"},
 		{Method: "GET", Endpoint: "/api/acme/autoRenew/ca", Reason: "Read the user's preferred ACME CA"},
 		{Method: "GET", Endpoint: "/api/acme/obtainCert", Reason: "Issue an SSL certificate for an installed route"},
