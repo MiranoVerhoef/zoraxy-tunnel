@@ -1,0 +1,70 @@
+[
+  {
+    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png",
+    "PluginIntroSpect": {
+      "id": "com.sniffingsugar.zoraxy-tunnel",
+      "name": "Zoraxy Tunnel",
+      "author": "sniffingsugar",
+      "author_contact": "",
+      "description": "Cloudflare-Tunnel-style reverse tunnel server for Zoraxy.",
+      "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel",
+      "type": 1,
+      "version_major": 1,
+      "version_minor": 2,
+      "version_patch": 0,
+      "static_capture_paths": null,
+      "static_capture_ingress": "",
+      "dynamic_capture_sniff": "",
+      "dynamic_capture_ingress": "",
+      "ui_path": "/ui",
+      "subscription_path": "",
+      "subscriptions_events": null,
+      "permitted_api_endpoints": [
+        {
+          "endpoint": "/api/proxy/list",
+          "method": "GET",
+          "reason": "Check installed routes"
+        },
+        {
+          "endpoint": "/api/proxy/add",
+          "method": "POST",
+          "reason": "Install a service route"
+        },
+        {
+          "endpoint": "/api/proxy/del",
+          "method": "POST",
+          "reason": "Remove a service route"
+        },
+        {
+          "endpoint": "/api/proxy/setTags",
+          "method": "POST",
+          "reason": "Assign tags to installed tunnel routes"
+        },
+        {
+          "endpoint": "/api/acme/autoRenew/email",
+          "method": "GET",
+          "reason": "Read the ACME email configured in Zoraxy"
+        },
+        {
+          "endpoint": "/api/acme/autoRenew/ca",
+          "method": "GET",
+          "reason": "Read the user's preferred ACME CA"
+        },
+        {
+          "endpoint": "/api/acme/obtainCert",
+          "method": "GET",
+          "reason": "Issue an SSL certificate for an installed route"
+        }
+      ]
+    },
+    "DownloadURLs": {
+      "linux_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_linux_amd64",
+      "linux_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_linux_arm64",
+      "linux_arm": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_linux_arm",
+      "darwin_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_darwin_amd64",
+      "darwin_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_darwin_arm64",
+      "windows_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_windows_amd64.exe",
+      "windows_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_windows_arm64.exe"
+    }
+  }
+]
