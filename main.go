@@ -11,7 +11,7 @@ import (
 	zp "zoraxy-tunnel/zoraxy_plugin"
 )
 
-//go:embed web2/* icon.png
+//go:embed web/* icon.png
 var webFS embed.FS
 
 // static ports: the control port clients dial and the ingress port Zoraxy
@@ -24,7 +24,7 @@ const (
 const (
 	verMajor = 1
 	verMinor = 5
-	verPatch = 0
+	verPatch = 1
 )
 
 var pluginVersion = fmt.Sprintf("v%d.%d.%d", verMajor, verMinor, verPatch)
@@ -66,7 +66,12 @@ func main() {
 	pluginDir := workingDir()
 	log.Printf("[tunnel] data dir: %s", pluginDir)
 	if icon, err := webFS.ReadFile("icon.png"); err == nil {
-		os.WriteFile(filepath.Join(pluginDir, "icon.png"), icon, 0644)
+		// Zoraxy loads the navigation/plugin-bar icon from the plugin root,
+		// which is the directory containing the plugin executable.
+		iconPath := filepath.Join(filepath.Dir(exePath()), "icon.png")
+		if err := os.WriteFile(iconPath, icon, 0644); err != nil {
+			log.Printf("[tunnel] icon write: %v", err)
+		}
 	}
 
 	certs := newCertManager(pluginDir)
@@ -95,7 +100,7 @@ func main() {
 	mux.HandleFunc("/ui/api/tunnels/action", api.handleTunnelAction)
 	mux.HandleFunc("/ui/api/services/action", api.handleServiceAction)
 
-	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web2", "/ui")
+	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web", "/ui")
 	ui.AttachHandlerToMux(mux)
 	ui.RegisterTerminateHandler(func() { log.Println("[tunnel] bye") }, mux)
 

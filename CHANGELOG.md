@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.5.1] - 04.09.26
+### Changed
+- Restore the wider v1.4-style two-column dashboard layout so Control Node and Tunnels make better use of horizontal space.
+- Keep Control Node collapsed by default with its server address and ports visible in the header summary.
+- Keep each tunnel/client connection collapsible, with connection state and service count visible while collapsed.
+- Keep individual services collapsible inside each tunnel for a cleaner overview without losing detailed controls.
+- Use the enhanced plugin icon in the dashboard and ensure the icon is written to the plugin executable directory, which is where Zoraxy loads the plugin-bar icon.
+- Add an icon cache-busting version to the custom store entry.
+
 ## [1.5.0] - 04.09.26
 ### Changed
 - Refine the product description to: **Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, and granular TLS controls.**

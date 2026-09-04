@@ -1,6 +1,6 @@
 [
   {
-    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png",
+    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.5.1",
     "PluginIntroSpect": {
       "id": "com.miranoverhoef.zoraxy-tunnel",
       "name": "Zoraxy Tunnel Enhanced",
@@ -11,7 +11,7 @@
       "type": 1,
       "version_major": 1,
       "version_minor": 5,
-      "version_patch": 0,
+      "version_patch": 1,
       "static_capture_paths": null,
       "static_capture_ingress": "",
       "dynamic_capture_sniff": "",
