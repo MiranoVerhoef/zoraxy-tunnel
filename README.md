@@ -1,10 +1,10 @@
-# zoraxy-tunnel
+# Zoraxy Tunnel Enhanced
 
-A self-hosted, Cloudflare-Tunnel-style reverse tunnel for [Zoraxy](https://github.com/tobychui/zoraxy).
+An enhanced self-hosted, Cloudflare-Tunnel-style reverse tunnel for [Zoraxy](https://github.com/tobychui/zoraxy).
 Run the plugin on your Zoraxy box, expose one TLS port, and reach services
 behind NAT/firewalls from anywhere — without an external account.
 
-This fork is published independently as **Zoraxy Tunnel - Mirano** with plugin ID
+This fork is published independently as **Zoraxy Tunnel Enhanced** with plugin ID
 `com.miranoverhoef.zoraxy-tunnel`. It uses its own releases, plugin-store entry,
 and container image and does not update from the upstream plugin ID.
 
@@ -142,6 +142,13 @@ to the new host. Deleting the service or tunnel removes that route automatically
 Public HTTP(S) and WebSockets are both supported and streamed. TLS verification
 is enabled for HTTPS targets by default and can be disabled per service when
 needed.
+
+## Enhanced dashboard
+
+Version 1.4 introduces a cleaner dashboard with at-a-glance client, tunnel and
+port status, a more compact control-node panel, improved tunnel/service cards,
+and a dedicated client-download dialog while keeping Zoraxy light/dark theme
+integration.
 
 ## Custom Zoraxy plugin store
 
