@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 04.09.26
+### Changed
+- Refine the product description to: **Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, and granular TLS controls.**
+- Use the enhanced tunnel icon in the dashboard header instead of the previous generic inline mark.
+- Collapse the Control Node section by default while keeping server address and port information visible in its summary.
+- Collapse each tunnel connection by default, with online state, service count, enabled state, token hint and connection ID visible at a glance.
+- Add collapsible service details inside each tunnel so host, client target, route state, TLS verification and TAG information stay available without cluttering the page.
+- Preserve expanded tunnel and service state during the dashboard's automatic refresh cycle.
+- Keep all existing route installation, certificate, client download, token, service editing and TLS controls available from the expanded views.
+
 ## [1.4.0] - 04.09.26
 ### Changed
 - Rename the plugin to **Zoraxy Tunnel Enhanced** while keeping the independent plugin ID `com.miranoverhoef.zoraxy-tunnel`.
