@@ -11,7 +11,7 @@ import (
 	zp "zoraxy-tunnel/zoraxy_plugin"
 )
 
-//go:embed web/* icon.png
+//go:embed web2/* icon.png
 var webFS embed.FS
 
 // static ports: the control port clients dial and the ingress port Zoraxy
@@ -23,7 +23,7 @@ const (
 
 const (
 	verMajor = 1
-	verMinor = 4
+	verMinor = 5
 	verPatch = 0
 )
 
@@ -34,7 +34,7 @@ var pluginSpec = &zp.IntroSpect{
 	Name:          "Zoraxy Tunnel Enhanced",
 	Author:        "Mirano Verhoef",
 	AuthorContact: "https://github.com/MiranoVerhoef",
-	Description:   "Enhanced self-hosted reverse tunnel server for Zoraxy.",
+	Description:   "Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, and granular TLS controls.",
 	URL:           "https://github.com/MiranoVerhoef/zoraxy-tunnel",
 	Type:          zp.PluginType_Utilities,
 	VersionMajor: verMajor, VersionMinor: verMinor, VersionPatch: verPatch,
@@ -95,7 +95,7 @@ func main() {
 	mux.HandleFunc("/ui/api/tunnels/action", api.handleTunnelAction)
 	mux.HandleFunc("/ui/api/services/action", api.handleServiceAction)
 
-	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web", "/ui")
+	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web2", "/ui")
 	ui.AttachHandlerToMux(mux)
 	ui.RegisterTerminateHandler(func() { log.Println("[tunnel] bye") }, mux)
 
