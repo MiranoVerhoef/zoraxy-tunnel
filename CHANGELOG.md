@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 04.09.26
+### Changed
+- Rename the plugin to **Zoraxy Tunnel Enhanced** while keeping the independent plugin ID `com.miranoverhoef.zoraxy-tunnel`.
+- Redesign the dashboard with at-a-glance client, tunnel, control-port and ingress-port status.
+- Make the control-node settings more compact and easier to scan.
+- Replace the old tunnel table layout with clearer tunnel and service cards.
+- Add a dedicated client download dialog and improve the generated client commands.
+- Keep the existing Zoraxy light/dark theme integration.
+
 ## [1.3.0] - 26.08.26
 ### Changed
 - Split the fork into its own Zoraxy plugin identity: `com.miranoverhoef.zoraxy-tunnel`.
