@@ -1,6 +1,21 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 09.09.26
+### Added
+- Guided Control Node setup with endpoint validation and a live client-endpoint preview.
+- Automatic control-port handling when a hostname or IP address is entered without a port.
+- Client-side server address normalization so `--server host` automatically uses port `9443` instead of failing with a missing-port error.
+
+### Changed
+- Redesign the dashboard into a cleaner, denser full-width management layout.
+- Replace the four large status cards with a compact status bar.
+- Make Control Node a compact full-width collapsible section instead of a permanent side column.
+- Make tunnel and service rows smaller and easier to scan, while keeping detailed controls available when expanded.
+- Simplify client telemetry into four primary metrics with secondary connection details underneath.
+- Block tunnel creation until the Control Node endpoint is valid so generated client commands cannot contain an unusable address.
+- Use only generic example hostnames in UI placeholders and documentation-style hints.
+
 ## [1.6.0] - 08.09.26
 ### Added
 - Client observability with reported client version, hostname, operating system, architecture and remote address.

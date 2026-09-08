@@ -14,8 +14,6 @@ import (
 //go:embed web/* icon.png
 var webFS embed.FS
 
-// static ports: the control port clients dial and the ingress port Zoraxy
-// routes to must survive restarts, so they are constants (cf. anubis adapter).
 const (
 	controlPort = 9443
 	ingressPort = 9080
@@ -23,7 +21,7 @@ const (
 
 const (
 	verMajor = 1
-	verMinor = 6
+	verMinor = 7
 	verPatch = 0
 )
 
@@ -66,8 +64,6 @@ func main() {
 	pluginDir := workingDir()
 	log.Printf("[tunnel] data dir: %s", pluginDir)
 	if icon, err := webFS.ReadFile("icon.png"); err == nil {
-		// Zoraxy loads the navigation/plugin-bar icon from the plugin root,
-		// which is the directory containing the plugin executable.
 		iconPath := filepath.Join(filepath.Dir(exePath()), "icon.png")
 		if err := os.WriteFile(iconPath, icon, 0644); err != nil {
 			log.Printf("[tunnel] icon write: %v", err)
@@ -105,7 +101,6 @@ func main() {
 	ui.AttachHandlerToMux(mux)
 	ui.RegisterTerminateHandler(func() { log.Println("[tunnel] bye") }, mux)
 
-	// control plane: TLS server tunnel clients connect to
 	control := newControlServer(certs.TLSConfig(), store, registry)
 	go func() {
 		if err := control.listenAndServe(fmt.Sprintf("0.0.0.0:%d", controlPort)); err != nil {
@@ -113,7 +108,6 @@ func main() {
 		}
 	}()
 
-	// data plane: public HTTP Zoraxy routes into
 	ingress := newIngressServer(store, registry)
 	go func() {
 		if err := ingress.listenAndServe(fmt.Sprintf("127.0.0.1:%d", ingressPort)); err != nil {
@@ -135,7 +129,6 @@ func exePath() string {
 	return "."
 }
 
-// workingDir returns the directory the plugin should store its state in.
 func workingDir() string {
 	if wd, err := os.Getwd(); err == nil {
 		return wd

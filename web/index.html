@@ -9,22 +9,84 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div class="shell">
-  <div class="hero"><div class="brandmark"><img src="https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.6.0" alt=""></div><div class="hero-copy"><h1>Zoraxy Tunnel Enhanced</h1><p>Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, and granular TLS controls.</p></div><div class="hero-actions"><span class="version-pill" id="versionPill">loading…</span><button class="btn sm" onclick="openDownloads()">Download client</button></div></div>
-  <div class="status-grid"><div class="stat"><div class="stat-label">Connected clients</div><div class="stat-value" id="statOnline">—</div><div class="stat-sub"><span class="status-dot" id="onlineDot"></span><span id="onlineText">checking</span></div></div><div class="stat"><div class="stat-label">Tunnels</div><div class="stat-value" id="statTunnels">—</div><div class="stat-sub">configured connections</div></div><div class="stat"><div class="stat-label">Control port</div><div class="stat-value" id="statControl">—</div><div class="stat-sub">client connections</div></div><div class="stat"><div class="stat-label">Ingress port</div><div class="stat-value" id="statIngress">—</div><div class="stat-sub">Zoraxy route target</div></div></div>
-  <div class="layout">
-    <div class="card collapsible" id="controlCard"><div class="card-head clickable" onclick="toggleControl()"><div class="card-title"><h2>Control node</h2><p id="controlSummary">Connection settings</p></div><div class="head-summary"><span class="badge" id="controlHostBadge">not configured</span><span class="badge" id="controlPortsBadge">:9443 / :9080</span></div><span class="chev">⌄</span></div><div class="card-body"><div class="field"><label>Certificate fingerprint</label><div class="fingerprint"><div class="value mono" id="fingerprint">—</div><button class="btn sm" onclick="copyText(STATUS.fingerprint)">Copy</button></div></div><div class="field"><label>Server address</label><input class="input" id="serverHost" placeholder="tunnel.example.com:9443"></div><div class="field"><label>Default Zoraxy TAG <span class="muted">(optional)</span></label><input class="input" id="defaultTag" placeholder="ZoraxyTunnel"></div><div class="field"><label>Ports</label><div class="ports"><div class="port-chip"><b id="controlPort">:9443</b><span>Control</span></div><div class="port-chip"><b id="ingressPort">:9080</b><span>Ingress</span></div></div></div><button class="btn primary" style="width:100%" onclick="saveSettings()">Save settings</button></div></div>
-    <div class="card"><div class="card-head"><div class="card-title"><h2>Tunnels</h2><p>Manage client connections, connection health and published services.</p></div></div><div class="card-body"><div class="create-row"><input class="input" id="newTunnel" placeholder="Tunnel name, e.g. home-server"><button class="btn primary" onclick="createTunnel()">Create tunnel</button></div><div id="tunnels"><div class="empty"><b>Loading tunnels…</b>Please wait.</div></div></div></div>
+  <header class="topbar">
+    <div class="brandmark"><img src="https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.7.0" alt=""></div>
+    <div class="brandcopy">
+      <h1>Zoraxy Tunnel Enhanced</h1>
+      <p>Secure reverse tunnel management for Zoraxy.</p>
+    </div>
+    <div class="top-actions">
+      <span class="version-pill" id="versionPill">loading…</span>
+      <button class="btn" onclick="openDownloads()">Download client</button>
+    </div>
+  </header>
+
+  <div class="statusbar">
+    <div class="statusitem"><span class="status-dot" id="onlineDot"></span><b id="statOnline">—</b><span id="onlineText">clients</span></div>
+    <div class="statusitem"><b id="statTunnels">—</b><span>tunnels</span></div>
+    <div class="statusitem"><span>Control</span><b class="mono" id="statControl">—</b></div>
+    <div class="statusitem"><span>Ingress</span><b class="mono" id="statIngress">—</b></div>
   </div>
+
+  <div class="setup-banner hidden" id="setupBanner">
+    <div><b>Finish Control Node setup</b><span>Set the public hostname or IP address clients should use before creating a tunnel.</span></div>
+    <button class="btn primary" onclick="openControlSetup()">Configure</button>
+  </div>
+
+  <section class="panel collapsible" id="controlCard">
+    <div class="panel-head clickable" onclick="toggleControl()">
+      <div class="panel-title">
+        <div class="eyebrow">CONTROL NODE</div>
+        <div class="panel-name" id="controlSummary">Connection settings</div>
+      </div>
+      <div class="panel-meta">
+        <span class="badge" id="controlHostBadge">not configured</span>
+        <span class="badge mono" id="controlPortsBadge">:9443 / :9080</span>
+        <span class="chev">⌄</span>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="settings-grid">
+        <div class="field span-2">
+          <label>Public hostname or address</label>
+          <input class="input" id="serverHost" placeholder="tunnel.example.com" autocomplete="off" oninput="updateEndpointPreview()">
+          <div class="field-help">You can enter a hostname, IP address, or host:port. Control port <span class="mono" id="defaultPortHelp">9443</span> is added automatically when omitted.</div>
+        </div>
+        <div class="endpoint-preview span-2" id="endpointPreview"><span>Client endpoint</span><b class="mono">Not configured</b></div>
+        <div class="field">
+          <label>Default Zoraxy TAG <span class="muted">optional</span></label>
+          <input class="input" id="defaultTag" placeholder="ZoraxyTunnel">
+        </div>
+        <div class="field">
+          <label>Certificate fingerprint</label>
+          <div class="fingerprint"><div class="value mono" id="fingerprint">—</div><button class="btn compact" onclick="event.stopPropagation();copyText(STATUS.fingerprint)">Copy</button></div>
+        </div>
+      </div>
+      <div class="settings-footer">
+        <div class="port-summary"><span>Control <b class="mono" id="controlPort">:9443</b></span><span>Ingress <b class="mono" id="ingressPort">:9080</b></span></div>
+        <button class="btn primary" onclick="saveSettings()">Save settings</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel tunnels-panel">
+    <div class="panel-head">
+      <div class="panel-title"><div class="eyebrow">TUNNELS</div><div class="panel-name">Client connections and published services</div></div>
+      <div class="create-inline"><input class="input" id="newTunnel" placeholder="Tunnel name"><button class="btn primary" onclick="createTunnel()">+ Create tunnel</button></div>
+    </div>
+    <div class="panel-body tunnels-body"><div id="tunnels"><div class="empty"><b>Loading tunnels…</b><span>Please wait.</span></div></div></div>
+  </section>
 </div>
-<div class="overlay" id="cmdModal"><div class="modal"><div class="modal-head"><div><h2>Connect your client</h2><p>Use the generated token once, then keep the client running.</p></div><button class="close" onclick="closeModal('cmdModal')">×</button></div><div class="note" id="tokenNote"></div><div class="tabs"><button class="btn sm active" data-tab="cli" onclick="switchTab('cli')">CLI</button><button class="btn sm" data-tab="docker" onclick="switchTab('docker')">Docker</button><button class="btn sm" data-tab="compose" onclick="switchTab('compose')">Compose</button></div><div id="tab-cli"><pre class="codebox" id="cmd-cli"></pre><button class="btn sm" onclick="copyFrom('cmd-cli')">Copy command</button></div><div id="tab-docker" style="display:none"><pre class="codebox" id="cmd-docker"></pre><button class="btn sm" onclick="copyFrom('cmd-docker')">Copy command</button></div><div id="tab-compose" style="display:none"><pre class="codebox" id="cmd-compose"></pre><button class="btn sm" onclick="copyFrom('cmd-compose')">Copy compose</button></div></div></div>
-<div class="overlay" id="svcModal"><div class="modal small"><div class="modal-head"><div><h2 id="svcModalTitle">Register service</h2><p>Map a public hostname to a target reachable from this client.</p></div><button class="close" onclick="closeSvc()">×</button></div><div class="field"><label>Name</label><input class="input" id="svcName" placeholder="webapp"></div><div class="field"><label>Public host</label><input class="input" id="svcHost" placeholder="app.example.com"></div><div class="field"><label>Path prefix <span class="muted">(optional)</span></label><input class="input" id="svcPath" placeholder="/api"></div><div class="field"><label>Local target on client</label><input class="input" id="svcTarget" placeholder="http://127.0.0.1:3000"></div><div class="field"><label>Zoraxy TAG(s) <span class="muted">(optional, comma-separated)</span></label><input class="input" id="svcTag" placeholder="ZoraxyTunnel"></div><label class="check"><input type="checkbox" id="svcSkipTLS"><span><b>Skip TLS certificate verification</b><br><span class="muted">Only for HTTPS targets with self-signed or otherwise untrusted certificates.</span></span></label><div class="modal-actions"><button class="btn ghost" onclick="closeSvc()">Cancel</button><button class="btn primary" id="svcSubmitBtn" onclick="submitService()">Register service</button></div></div></div>
+
+<div class="overlay" id="cmdModal"><div class="modal"><div class="modal-head"><div><h2>Connect your client</h2><p>Use the generated token once, then keep the client running.</p></div><button class="close" onclick="closeModal('cmdModal')">×</button></div><div class="note" id="tokenNote"></div><div class="tabs"><button class="btn compact active" data-tab="cli" onclick="switchTab('cli')">CLI</button><button class="btn compact" data-tab="docker" onclick="switchTab('docker')">Docker</button><button class="btn compact" data-tab="compose" onclick="switchTab('compose')">Compose</button></div><div id="tab-cli"><pre class="codebox" id="cmd-cli"></pre><button class="btn compact" onclick="copyFrom('cmd-cli')">Copy command</button></div><div id="tab-docker" style="display:none"><pre class="codebox" id="cmd-docker"></pre><button class="btn compact" onclick="copyFrom('cmd-docker')">Copy command</button></div><div id="tab-compose" style="display:none"><pre class="codebox" id="cmd-compose"></pre><button class="btn compact" onclick="copyFrom('cmd-compose')">Copy compose</button></div></div></div>
+
+<div class="overlay" id="svcModal"><div class="modal small"><div class="modal-head"><div><h2 id="svcModalTitle">Register service</h2><p>Map a public hostname to a target reachable from this client.</p></div><button class="close" onclick="closeSvc()">×</button></div><div class="form-grid"><div class="field"><label>Name</label><input class="input" id="svcName" placeholder="webapp"></div><div class="field"><label>Public host</label><input class="input" id="svcHost" placeholder="app.example.com"></div><div class="field"><label>Path prefix <span class="muted">optional</span></label><input class="input" id="svcPath" placeholder="/api"></div><div class="field"><label>Local target on client</label><input class="input" id="svcTarget" placeholder="http://127.0.0.1:3000"></div><div class="field span-2"><label>Zoraxy TAG(s) <span class="muted">optional, comma-separated</span></label><input class="input" id="svcTag" placeholder="ZoraxyTunnel"></div></div><label class="check"><input type="checkbox" id="svcSkipTLS"><span><b>Skip TLS certificate verification</b><small>Only use this for HTTPS targets with self-signed or otherwise untrusted certificates.</small></span></label><div class="modal-actions"><button class="btn ghost" onclick="closeSvc()">Cancel</button><button class="btn primary" id="svcSubmitBtn" onclick="submitService()">Register service</button></div></div></div>
+
 <div class="overlay" id="confirmModal"><div class="modal small"><div class="modal-head"><div><h2 id="confirmTitle">Confirm</h2><p id="confirmMsg"></p></div></div><div class="modal-actions"><button class="btn ghost" onclick="closeConfirm()">Cancel</button><button class="btn danger" onclick="runConfirm()">Confirm</button></div></div></div>
 <div class="overlay" id="installModal"><div class="modal small"><div class="modal-head"><div><h2>Install route</h2><p id="installMsg"></p></div></div><div class="note">Install only the route, or also request an SSL certificate using Zoraxy's configured ACME settings.</div><div class="modal-actions"><button class="btn ghost" onclick="closeInstall()">Cancel</button><button class="btn" onclick="doInstall(false)">Route only</button><button class="btn primary" onclick="doInstall(true)">Route + SSL cert</button></div></div></div>
-<div class="overlay" id="downloadModal"><div class="modal small"><div class="modal-head"><div><h2>Download tunnel client</h2><p>Choose a build for the machine running your private service.</p></div><button class="close" onclick="closeModal('downloadModal')">×</button></div><div class="service-list" id="downloadLinks"></div></div></div>
+<div class="overlay" id="downloadModal"><div class="modal small"><div class="modal-head"><div><h2>Download tunnel client</h2><p>Choose a build for the machine running your private service.</p></div><button class="close" onclick="closeModal('downloadModal')">×</button></div><div class="download-list" id="downloadLinks"></div></div></div>
 <div class="toast" id="toast">Saved</div>
-
 <script src="app.js"></script>
 </body>
 </html>

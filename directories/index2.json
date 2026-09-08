@@ -1,6 +1,6 @@
 [
   {
-    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.6.0",
+    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.7.0",
     "PluginIntroSpect": {
       "id": "com.miranoverhoef.zoraxy-tunnel",
       "name": "Zoraxy Tunnel Enhanced",
@@ -10,7 +10,7 @@
       "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel",
       "type": 1,
       "version_major": 1,
-      "version_minor": 6,
+      "version_minor": 7,
       "version_patch": 0,
       "static_capture_paths": null,
       "static_capture_ingress": "",
@@ -20,41 +20,13 @@
       "subscription_path": "",
       "subscriptions_events": null,
       "permitted_api_endpoints": [
-        {
-          "endpoint": "/api/proxy/list",
-          "method": "GET",
-          "reason": "Check installed routes"
-        },
-        {
-          "endpoint": "/api/proxy/add",
-          "method": "POST",
-          "reason": "Install a service route"
-        },
-        {
-          "endpoint": "/api/proxy/del",
-          "method": "POST",
-          "reason": "Remove a service route"
-        },
-        {
-          "endpoint": "/api/proxy/setTags",
-          "method": "POST",
-          "reason": "Assign tags to installed tunnel routes"
-        },
-        {
-          "endpoint": "/api/acme/autoRenew/email",
-          "method": "GET",
-          "reason": "Read the ACME email configured in Zoraxy"
-        },
-        {
-          "endpoint": "/api/acme/autoRenew/ca",
-          "method": "GET",
-          "reason": "Read the user's preferred ACME CA"
-        },
-        {
-          "endpoint": "/api/acme/obtainCert",
-          "method": "GET",
-          "reason": "Issue an SSL certificate for an installed route"
-        }
+        {"endpoint":"/api/proxy/list","method":"GET","reason":"Check installed routes"},
+        {"endpoint":"/api/proxy/add","method":"POST","reason":"Install a service route"},
+        {"endpoint":"/api/proxy/del","method":"POST","reason":"Remove a service route"},
+        {"endpoint":"/api/proxy/setTags","method":"POST","reason":"Assign tags to installed tunnel routes"},
+        {"endpoint":"/api/acme/autoRenew/email","method":"GET","reason":"Read the ACME email configured in Zoraxy"},
+        {"endpoint":"/api/acme/autoRenew/ca","method":"GET","reason":"Read the user's preferred ACME CA"},
+        {"endpoint":"/api/acme/obtainCert","method":"GET","reason":"Issue an SSL certificate for an installed route"}
       ]
     },
     "DownloadURLs": {
