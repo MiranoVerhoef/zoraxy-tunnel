@@ -23,8 +23,8 @@ const (
 
 const (
 	verMajor = 1
-	verMinor = 5
-	verPatch = 1
+	verMinor = 6
+	verPatch = 0
 )
 
 var pluginVersion = fmt.Sprintf("v%d.%d.%d", verMajor, verMinor, verPatch)
@@ -37,7 +37,7 @@ var pluginSpec = &zp.IntroSpect{
 	Description:   "Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, and granular TLS controls.",
 	URL:           "https://github.com/MiranoVerhoef/zoraxy-tunnel",
 	Type:          zp.PluginType_Utilities,
-	VersionMajor: verMajor, VersionMinor: verMinor, VersionPatch: verPatch,
+	VersionMajor:  verMajor, VersionMinor: verMinor, VersionPatch: verPatch,
 	UIPath: "/ui",
 	PermittedAPIEndpoints: []zp.PermittedAPIEndpoint{
 		{Method: "GET", Endpoint: "/api/proxy/list", Reason: "Check installed routes"},
@@ -99,6 +99,7 @@ func main() {
 	mux.HandleFunc("/ui/api/tunnels", api.handleTunnels)
 	mux.HandleFunc("/ui/api/tunnels/action", api.handleTunnelAction)
 	mux.HandleFunc("/ui/api/services/action", api.handleServiceAction)
+	mux.HandleFunc("/ui/api/client-stats", api.handleClientStats)
 
 	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web", "/ui")
 	ui.AttachHandlerToMux(mux)

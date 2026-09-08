@@ -76,11 +76,25 @@ func (c *controlServer) handle(conn net.Conn) {
 		return
 	}
 
-	s := &session{yamux: sess, joined: time.Now()}
+	now := time.Now().UTC()
+	s := &session{
+		yamux:          sess,
+		joined:         now,
+		lastActivity:   now,
+		remoteAddr:     remote,
+		clientVersion:  req.Version,
+		clientHostname: req.Hostname,
+		clientOS:       req.OS,
+		clientArch:     req.Arch,
+	}
 	if c.registry.register(tunnelID, s) {
 		log.Printf("[tunnel] replaced previous client for %s", tunnelID)
 	}
-	log.Printf("[tunnel] client connected for %s from %s", tunnelID, remote)
+	if req.Version != "" {
+		log.Printf("[tunnel] client connected for %s from %s (%s, %s/%s)", tunnelID, remote, req.Version, req.OS, req.Arch)
+	} else {
+		log.Printf("[tunnel] client connected for %s from %s", tunnelID, remote)
+	}
 
 	// block until the client disappears
 	<-sess.CloseChan()

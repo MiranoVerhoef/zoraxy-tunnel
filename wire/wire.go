@@ -132,8 +132,14 @@ func PumpFramesToRaw(dst io.Writer, src io.Reader) error {
 }
 
 // AuthReq is sent by the client on the first stream right after yamux is up.
+// The telemetry fields are optional so v1.6 servers remain compatible with
+// older clients and v1.6 clients can still authenticate against older servers.
 type AuthReq struct {
-	Token string `json:"token"`
+	Token    string `json:"token"`
+	Version  string `json:"version,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
+	OS       string `json:"os,omitempty"`
+	Arch     string `json:"arch,omitempty"`
 }
 
 // AuthResp tells the client whether the token was accepted.
@@ -146,9 +152,9 @@ type AuthResp struct {
 // RequestHead is what the server pushes down a fresh data stream for each
 // incoming HTTP request the ingress receives.
 type RequestHead struct {
-	Target        string            `json:"target"`          // client-local upstream, e.g. http://127.0.0.1:3000
+	Target        string            `json:"target"` // client-local upstream, e.g. http://127.0.0.1:3000
 	Method        string            `json:"method"`
-	URL           string            `json:"url"`             // path + query
+	URL           string            `json:"url"` // path + query
 	Host          string            `json:"host"`
 	Headers       map[string]string `json:"headers"`
 	IsWebSocket   bool              `json:"is_websocket"`

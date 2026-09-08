@@ -12,6 +12,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 )
 
 const (
+	clientVersion  = "v1.6.0"
 	dialTimeout    = 10 * time.Second // bounds both TCP connect and TLS handshake
 	initialBackoff = time.Second      // first reconnect delay
 	maxBackoff     = 30 * time.Second // ceiling for exponential backoff
@@ -30,8 +32,13 @@ func main() {
 	server := flag.String("server", "", "tunnel server host:port (e.g. tunnel.example.com:9443)")
 	token := flag.String("token", "", "tunnel token (from the dashboard)")
 	fingerprint := flag.String("fingerprint", "", "expected SHA256 cert fingerprint, e.g. AB:CD:EF:...")
+	showVersion := flag.Bool("version", false, "print tunnel client version and exit")
 	flag.Parse()
 
+	if *showVersion {
+		fmt.Println(clientVersion)
+		return
+	}
 	if *server == "" || *token == "" || *fingerprint == "" {
 		fmt.Fprintln(os.Stderr, "usage: tunnel-client --server HOST:PORT --token TOKEN --fingerprint FP")
 		flag.Usage()
@@ -92,7 +99,14 @@ func run(server, token, wantFingerprint string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if err := wire.WriteJSON(auth, wire.AuthReq{Token: token}); err != nil {
+	hostname, _ := os.Hostname()
+	if err := wire.WriteJSON(auth, wire.AuthReq{
+		Token:    token,
+		Version:  clientVersion,
+		Hostname: hostname,
+		OS:       runtime.GOOS,
+		Arch:     runtime.GOARCH,
+	}); err != nil {
 		return false, err
 	}
 	var resp wire.AuthResp
@@ -105,7 +119,7 @@ func run(server, token, wantFingerprint string) (bool, error) {
 		// misconfigured client doesn't hammer the server.
 		return false, errors.New("auth rejected: " + resp.Error)
 	}
-	log.Printf("[client] authenticated, tunnel=%s", resp.TunnelID)
+	log.Printf("[client] authenticated, tunnel=%s version=%s", resp.TunnelID, clientVersion)
 
 	for {
 		stream, err := sess.Accept()

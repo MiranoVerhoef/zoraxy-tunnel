@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 08.09.26
+### Added
+- Client observability with reported client version, hostname, operating system, architecture and remote address.
+- Live per-tunnel connection telemetry for uptime, last activity, request count, active streams, transferred tunnel bytes and reconnect count.
+- Client/plugin version mismatch indicators in the dashboard.
+- `tunnel-client --version` for quickly checking the installed client build.
+
+### Changed
+- Extend the client authentication handshake with optional telemetry metadata while keeping older tunnel clients compatible.
+- Keep the v1.5.1 wide two-column dashboard layout and surface telemetry inside each expanded tunnel instead of adding more top-level panels.
+- Keep connection metrics in memory only; counters reset when the plugin restarts and no tunnel tokens or service secrets are exposed through telemetry.
+
 ## [1.5.1] - 04.09.26
 ### Changed
 - Restore the wider v1.4-style two-column dashboard layout so Control Node and Tunnels make better use of horizontal space.

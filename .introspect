@@ -7,8 +7,8 @@
   "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel",
   "type": 1,
   "version_major": 1,
-  "version_minor": 5,
-  "version_patch": 1,
+  "version_minor": 6,
+  "version_patch": 0,
   "ui_path": "/ui",
   "permitted_api_endpoints": [
     {
