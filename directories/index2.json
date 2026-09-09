@@ -1,17 +1,17 @@
 [
   {
-    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.7.2",
+    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.8.0",
     "PluginIntroSpect": {
       "id": "com.miranoverhoef.zoraxy-tunnel",
       "name": "Zoraxy Tunnel Enhanced",
       "author": "Mirano Verhoef",
       "author_contact": "https://github.com/MiranoVerhoef",
-      "description": "Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, and granular TLS controls.",
+      "description": "Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, redundant connectors, and granular TLS controls.",
       "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel",
       "type": 1,
       "version_major": 1,
-      "version_minor": 7,
-      "version_patch": 2,
+      "version_minor": 8,
+      "version_patch": 0,
       "static_capture_paths": null,
       "static_capture_ingress": "",
       "dynamic_capture_sniff": "",
