@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Go format check
+        run: |
+          test -z "$(gofmt -l -- *.go client/*.go wire/*.go zoraxy_plugin/*.go)" || {
+            echo "Go files need gofmt:";
+            gofmt -l -- *.go client/*.go wire/*.go zoraxy_plugin/*.go;
+            exit 1;
+          }
+      - name: Go test
+        run: go test ./...
+      - name: Build plugin and client
+        run: |
+          go build -o /tmp/zoraxy-tunnel .
+          go build -o /tmp/tunnel-client ./client
+      - name: Validate browser JavaScript
+        run: |
+          node --check web/app.js
+          node --check web/connectors.js
+      - name: Validate store metadata
+        run: |
+          jq -e --slurpfile intro .introspect '
+            .[0].PluginIntroSpect.id == $intro[0].id and
+            .[0].PluginIntroSpect.name == $intro[0].name and
+            .[0].PluginIntroSpect.author == $intro[0].author and
+            .[0].PluginIntroSpect.version_major == $intro[0].version_major and
+            .[0].PluginIntroSpect.version_minor == $intro[0].version_minor and
+            .[0].PluginIntroSpect.version_patch == $intro[0].version_patch
+          ' directories/index2.json
