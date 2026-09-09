@@ -7,20 +7,12 @@
 <link rel="stylesheet" href="/darktheme.css">
 <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
 <link rel="stylesheet" href="style.css">
-<style>
-#floatingMenuLayer{position:fixed;inset:0;pointer-events:none;z-index:2147483000}
-.floating-action-menu{position:fixed;min-width:210px;max-width:min(320px,calc(100vw - 24px));background:var(--theme_bg_primary,#22252b);border:1px solid var(--divider_color,#343842);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.28);padding:6px;pointer-events:auto;color:var(--text_color,#eef1f5)}
-.floating-action-menu button{width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:9px 10px;border-radius:7px;font-size:11.5px;cursor:pointer;white-space:normal}
-.floating-action-menu button:hover{background:var(--theme_advance,#1b1e23)}
-.floating-action-menu button.danger-item{color:#ef6d6d}
-.floating-action-menu .menu-sep{height:1px;background:var(--divider_color,#343842);margin:4px}
-.table-wrap .menu.open{visibility:hidden!important;pointer-events:none!important}
-</style>
+<link rel="stylesheet" href="connectors.css">
 </head>
 <body>
 <div class="app-shell">
   <header class="app-header">
-    <div class="brandmark"><img src="https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.7.2" alt=""></div>
+    <div class="brandmark"><img src="https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.8.0" alt=""></div>
     <div class="brand-copy">
       <h1>Zoraxy Tunnel Enhanced</h1>
       <p>Secure reverse tunnel management for Zoraxy.</p>
@@ -33,20 +25,11 @@
   </header>
 
   <section class="control-strip">
-    <div class="control-item">
-      <div class="control-icon">▣</div>
-      <div><span>Control node</span><strong class="mono" id="summaryControl">Not configured</strong></div>
-    </div>
+    <div class="control-item"><div class="control-icon">▣</div><div><span>Control node</span><strong class="mono" id="summaryControl">Not configured</strong></div></div>
     <div class="control-divider"></div>
-    <div class="control-item">
-      <div class="control-icon">⇄</div>
-      <div><span>Ingress</span><strong class="mono" id="summaryIngress">:9080</strong></div>
-    </div>
+    <div class="control-item"><div class="control-icon">⇄</div><div><span>Ingress</span><strong class="mono" id="summaryIngress">:9080</strong></div></div>
     <div class="control-spacer"></div>
-    <div class="control-status">
-      <span class="status-dot" id="summaryDot"></span>
-      <div><strong id="summaryStatus">Offline</strong><span id="summaryUptime">No clients connected</span></div>
-    </div>
+    <div class="control-status"><span class="status-dot" id="summaryDot"></span><div><strong id="summaryStatus">Offline</strong><span id="summaryUptime">No clients connected</span></div></div>
     <div class="control-divider"></div>
     <button class="btn secondary" onclick="copyConnectionInfo()"><span class="btn-icon">▣</span>Copy connection info</button>
   </section>
@@ -73,15 +56,10 @@
           </div>
         </div>
         <div class="table-wrap">
-          <div class="tunnel-table-head">
-            <div class="col-expand"></div><div class="col-name">Name</div><div>Status</div><div>Services</div><div>Uptime</div><div>Version</div><div>Last activity</div><div>Traffic</div><div class="col-actions">Actions</div>
-          </div>
+          <div class="tunnel-table-head"><div class="col-expand"></div><div class="col-name">Name</div><div>Status</div><div>Services</div><div>Uptime</div><div>Version</div><div>Last activity</div><div>Traffic</div><div class="col-actions">Actions</div></div>
           <div id="tunnels"><div class="empty-state"><strong>Loading tunnels…</strong><span>Please wait.</span></div></div>
         </div>
-        <div class="table-footer">
-          <div id="tableSummary">0 tunnels</div>
-          <div class="pagination"><span>Rows per page</span><select class="select compact" id="rowsPerPage" onchange="changePageSize()"><option>10</option><option>25</option><option>50</option></select><button class="page-btn" id="prevPage" onclick="changePage(-1)">‹</button><span class="page-current" id="pageCurrent">1</span><button class="page-btn" id="nextPage" onclick="changePage(1)">›</button></div>
-        </div>
+        <div class="table-footer"><div id="tableSummary">0 tunnels</div><div class="pagination"><span>Rows per page</span><select class="select compact" id="rowsPerPage" onchange="changePageSize()"><option>10</option><option>25</option><option>50</option></select><button class="page-btn" id="prevPage" onclick="changePage(-1)">‹</button><span class="page-current" id="pageCurrent">1</span><button class="page-btn" id="nextPage" onclick="changePage(1)">›</button></div></div>
       </div>
     </section>
 
@@ -104,7 +82,7 @@
 
 <div class="overlay" id="createTunnelModal"><div class="modal small"><div class="modal-head"><div><h2>Create tunnel</h2><p>Create a client connection and generate its one-time credential.</p></div><button class="close" onclick="closeModal('createTunnelModal')">×</button></div><div class="field"><label>Tunnel name</label><input class="input" id="newTunnel" placeholder="e.g. HomeLab" onkeydown="if(event.key==='Enter')createTunnel()"></div><div class="modal-actions"><button class="btn secondary" onclick="closeModal('createTunnelModal')">Cancel</button><button class="btn primary" onclick="createTunnel()">Create tunnel</button></div></div></div>
 
-<div class="overlay" id="cmdModal"><div class="modal"><div class="modal-head"><div><h2>Connect your client</h2><p>Save this credential now. It remains valid across client and plugin updates.</p></div><button class="close" onclick="closeModal('cmdModal')">×</button></div><div class="note" id="tokenNote"></div><div class="modal-tabs"><button class="btn compact active" data-tab="cli" onclick="switchTab('cli')">CLI</button><button class="btn compact" data-tab="docker" onclick="switchTab('docker')">Docker</button><button class="btn compact" data-tab="compose" onclick="switchTab('compose')">Compose</button></div><div id="tab-cli"><pre class="codebox" id="cmd-cli"></pre><button class="btn secondary compact" onclick="copyFrom('cmd-cli')">Copy command</button></div><div id="tab-docker" style="display:none"><pre class="codebox" id="cmd-docker"></pre><button class="btn secondary compact" onclick="copyFrom('cmd-docker')">Copy command</button></div><div id="tab-compose" style="display:none"><pre class="codebox" id="cmd-compose"></pre><button class="btn secondary compact" onclick="copyFrom('cmd-compose')">Copy compose</button></div></div></div>
+<div class="overlay" id="cmdModal"><div class="modal"><div class="modal-head"><div><h2>Connect your client</h2><p>Save this credential now. It remains valid across client and plugin updates.</p></div><button class="close" onclick="closeModal('cmdModal')">×</button></div><div class="note" id="tokenNote"></div><div class="cmd-connector"><div class="field"><label>Connector ID</label><input class="input mono" id="connectorId" placeholder="e.g. homelab-primary" oninput="refreshCommands()"><small>Use a different stable ID on every redundant host. The same tunnel token can be reused.</small></div></div><div class="redundancy-note">When multiple connectors are online, one is Primary and the others stay ready as Standby. You can mark a connector as Preferred in the tunnel details; new traffic automatically fails back to it when it reconnects.</div><div class="modal-tabs"><button class="btn compact active" data-tab="cli" onclick="switchTab('cli')">CLI</button><button class="btn compact" data-tab="docker" onclick="switchTab('docker')">Docker</button><button class="btn compact" data-tab="compose" onclick="switchTab('compose')">Compose</button></div><div id="tab-cli"><pre class="codebox" id="cmd-cli"></pre><button class="btn secondary compact" onclick="copyFrom('cmd-cli')">Copy command</button></div><div id="tab-docker" style="display:none"><pre class="codebox" id="cmd-docker"></pre><button class="btn secondary compact" onclick="copyFrom('cmd-docker')">Copy command</button></div><div id="tab-compose" style="display:none"><pre class="codebox" id="cmd-compose"></pre><button class="btn secondary compact" onclick="copyFrom('cmd-compose')">Copy compose</button></div></div></div>
 
 <div class="overlay" id="svcModal"><div class="modal small"><div class="modal-head"><div><h2 id="svcModalTitle">Register service</h2><p>Map a public hostname to a target reachable from this client.</p></div><button class="close" onclick="closeSvc()">×</button></div><div class="form-grid"><div class="field"><label>Name</label><input class="input" id="svcName" placeholder="webapp"></div><div class="field"><label>Public host</label><input class="input" id="svcHost" placeholder="app.example.com"></div><div class="field"><label>Path prefix <span>optional</span></label><input class="input" id="svcPath" placeholder="/api"></div><div class="field"><label>Local target on client</label><input class="input" id="svcTarget" placeholder="http://127.0.0.1:3000"></div><div class="field span-2"><label>Zoraxy TAG(s) <span>optional</span></label><input class="input" id="svcTag" placeholder="ZoraxyTunnel"></div></div><label class="check"><input type="checkbox" id="svcSkipTLS"><span><strong>Skip TLS certificate verification</strong><small>Only use this for HTTPS targets with self-signed or otherwise untrusted certificates.</small></span></label><div class="modal-actions"><button class="btn secondary" onclick="closeSvc()">Cancel</button><button class="btn primary" id="svcSubmitBtn" onclick="submitService()">Register service</button></div></div></div>
 
@@ -114,36 +92,6 @@
 <div id="floatingMenuLayer"></div>
 <div class="toast" id="toast">Saved</div>
 <script src="app.js"></script>
-<script>
-(function(){
-  const layer=document.getElementById('floatingMenuLayer');
-  let anchorRect=null,floating=null;
-  function closeFloating(){layer.innerHTML='';floating=null;anchorRect=null}
-  function positionFloating(){
-    if(!floating||!anchorRect)return;
-    const margin=10,gap=6,r=floating.getBoundingClientRect();
-    let left=Math.max(margin,Math.min(anchorRect.right-r.width,window.innerWidth-r.width-margin));
-    let top=anchorRect.bottom+gap;
-    if(top+r.height>window.innerHeight-margin&&anchorRect.top-r.height-gap>=margin)top=anchorRect.top-r.height-gap;
-    top=Math.max(margin,Math.min(top,window.innerHeight-r.height-margin));
-    floating.style.left=Math.round(left)+'px';floating.style.top=Math.round(top)+'px';
-  }
-  function mirrorOpenMenu(){
-    const open=document.querySelector('.table-wrap .menu.open');
-    if(!open){closeFloating();return}
-    floating=document.createElement('div');floating.className='floating-action-menu';floating.innerHTML=open.innerHTML;
-    layer.innerHTML='';layer.appendChild(floating);positionFloating();
-  }
-  document.addEventListener('click',function(e){
-    const trigger=e.target.closest('[onclick*="toggleActionMenu"]');
-    if(trigger){anchorRect=trigger.getBoundingClientRect();setTimeout(mirrorOpenMenu,0);return}
-    if(e.target.closest('.floating-action-menu')){setTimeout(closeFloating,0);return}
-    closeFloating();
-  },true);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFloating()});
-  window.addEventListener('resize',closeFloating);
-  window.addEventListener('scroll',closeFloating,true);
-})();
-</script>
+<script src="connectors.js"></script>
 </body>
 </html>
