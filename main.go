@@ -12,11 +12,93 @@ import (
 
 //go:embed web/* icon.png
 var webFS embed.FS
-const(controlPort=9443;ingressPort=9080)
-const(verMajor=1;verMinor=8;verPatch=0)
-var pluginVersion=fmt.Sprintf("v%d.%d.%d",verMajor,verMinor,verPatch)
-var pluginSpec=&zp.IntroSpect{ID:"com.miranoverhoef.zoraxy-tunnel",Name:"Zoraxy Tunnel Enhanced",Author:"Mirano Verhoef",AuthorContact:"https://github.com/MiranoVerhoef",Description:"Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, and granular TLS controls.",URL:"https://github.com/MiranoVerhoef/zoraxy-tunnel",Type:zp.PluginType_Utilities,VersionMajor:verMajor,VersionMinor:verMinor,VersionPatch:verPatch,UIPath:"/ui",PermittedAPIEndpoints:[]zp.PermittedAPIEndpoint{{Method:"GET",Endpoint:"/api/proxy/list",Reason:"Check installed routes"},{Method:"POST",Endpoint:"/api/proxy/add",Reason:"Install a service route"},{Method:"POST",Endpoint:"/api/proxy/del",Reason:"Remove a service route"},{Method:"POST",Endpoint:"/api/proxy/setTags",Reason:"Assign tags to installed tunnel routes"},{Method:"GET",Endpoint:"/api/acme/autoRenew/email",Reason:"Read the ACME email configured in Zoraxy"},{Method:"GET",Endpoint:"/api/acme/autoRenew/ca",Reason:"Read the user's preferred ACME CA"},{Method:"GET",Endpoint:"/api/acme/obtainCert",Reason:"Issue an SSL certificate for an installed route"}}}
 
-func main(){config,err:=zp.ServeAndRecvSpec(pluginSpec);if err!=nil{log.Println("[tunnel] dev mode (no -configure flag)");config=&zp.ConfigureSpec{Port:9699}};zPort:=config.ZoraxyPort;if zPort==0{zPort=8000};uiPort:=config.Port;pluginDir:=workingDir();log.Printf("[tunnel] data dir: %s",pluginDir);if icon,err:=webFS.ReadFile("icon.png");err==nil{iconPath:=filepath.Join(filepath.Dir(exePath()),"icon.png");if err:=os.WriteFile(iconPath,icon,0644);err!=nil{log.Printf("[tunnel] icon write: %v",err)}};certs:=newCertManager(pluginDir);if err:=certs.LoadOrCreate();err!=nil{log.Fatalf("[tunnel] cert: %v",err)};log.Printf("[tunnel] cert fingerprint: %s",certs.Fingerprint());store:=newStore(pluginDir);if err:=store.Load();err!=nil{log.Printf("[tunnel] config load: %v",err)};registry:=newSessionRegistry();api:=&apiServer{store:store,registry:registry,certs:certs,zPort:zPort,apiKey:config.APIKey,ingressPort:ingressPort,controlPort:controlPort,uiPort:uiPort,version:pluginVersion};mux:=http.NewServeMux();mux.HandleFunc("/ui/api/status",api.handleStatus);mux.HandleFunc("/ui/api/settings",api.handleSettings);mux.HandleFunc("/ui/api/tunnels",api.handleTunnels);mux.HandleFunc("/ui/api/tunnels/action",api.handleTunnelAction);mux.HandleFunc("/ui/api/services/action",api.handleServiceAction);mux.HandleFunc("/ui/api/client-stats",api.handleClientStats);mux.HandleFunc("/ui/api/connectors/preferred",api.handlePreferredConnector);ui:=zp.NewPluginEmbedUIRouter(pluginSpec.ID,&webFS,"web","/ui");ui.AttachHandlerToMux(mux);ui.RegisterTerminateHandler(func(){log.Println("[tunnel] bye")},mux);control:=newControlServer(certs.TLSConfig(),store,registry);go func(){if err:=control.listenAndServe(fmt.Sprintf("0.0.0.0:%d",controlPort));err!=nil{log.Printf("[tunnel] control: %v",err)}}();ingress:=newIngressServer(store,registry);go func(){if err:=ingress.listenAndServe(fmt.Sprintf("127.0.0.1:%d",ingressPort));err!=nil{log.Printf("[tunnel] ingress: %v",err)}}();log.Printf("[tunnel] ui :%d  ingress :%d  control :%d",uiPort,ingressPort,controlPort);log.Fatalf("[tunnel] %v",http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d",uiPort),mux))}
-func exePath()string{if exe,err:=os.Executable();err==nil{if resolved,err:=filepath.EvalSymlinks(exe);err==nil{return resolved};return exe};return "."}
-func workingDir()string{if wd,err:=os.Getwd();err==nil{return wd};return filepath.Dir(exePath())}
+const (
+	controlPort = 9443
+	ingressPort = 9080
+)
+
+const (
+	verMajor = 1
+	verMinor = 8
+	verPatch = 0
+)
+
+var pluginVersion = fmt.Sprintf("v%d.%d.%d", verMajor, verMinor, verPatch)
+
+var pluginSpec = &zp.IntroSpect{
+	ID:            "com.miranoverhoef.zoraxy-tunnel",
+	Name:          "Zoraxy Tunnel Enhanced",
+	Author:        "Mirano Verhoef",
+	AuthorContact: "https://github.com/MiranoVerhoef",
+	Description:   "Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, redundant connectors, and granular TLS controls.",
+	URL:           "https://github.com/MiranoVerhoef/zoraxy-tunnel",
+	Type:          zp.PluginType_Utilities,
+	VersionMajor:  verMajor,
+	VersionMinor:  verMinor,
+	VersionPatch:  verPatch,
+	UIPath:        "/ui",
+	PermittedAPIEndpoints: []zp.PermittedAPIEndpoint{
+		{Method: "GET", Endpoint: "/api/proxy/list", Reason: "Check installed routes"},
+		{Method: "POST", Endpoint: "/api/proxy/add", Reason: "Install a service route"},
+		{Method: "POST", Endpoint: "/api/proxy/del", Reason: "Remove a service route"},
+		{Method: "POST", Endpoint: "/api/proxy/setTags", Reason: "Assign tags to installed tunnel routes"},
+		{Method: "GET", Endpoint: "/api/acme/autoRenew/email", Reason: "Read the ACME email configured in Zoraxy"},
+		{Method: "GET", Endpoint: "/api/acme/autoRenew/ca", Reason: "Read the user's preferred ACME CA"},
+		{Method: "GET", Endpoint: "/api/acme/obtainCert", Reason: "Issue an SSL certificate for an installed route"},
+	},
+}
+
+func main() {
+	config, err := zp.ServeAndRecvSpec(pluginSpec)
+	if err != nil {
+		log.Println("[tunnel] dev mode (no -configure flag)")
+		config = &zp.ConfigureSpec{Port: 9699}
+	}
+	zPort := config.ZoraxyPort
+	if zPort == 0 { zPort = 8000 }
+	uiPort := config.Port
+	pluginDir := workingDir()
+	log.Printf("[tunnel] data dir: %s", pluginDir)
+	if icon, err := webFS.ReadFile("icon.png"); err == nil {
+		iconPath := filepath.Join(filepath.Dir(exePath()), "icon.png")
+		if err := os.WriteFile(iconPath, icon, 0644); err != nil { log.Printf("[tunnel] icon write: %v", err) }
+	}
+	certs := newCertManager(pluginDir)
+	if err := certs.LoadOrCreate(); err != nil { log.Fatalf("[tunnel] cert: %v", err) }
+	log.Printf("[tunnel] cert fingerprint: %s", certs.Fingerprint())
+	store := newStore(pluginDir)
+	if err := store.Load(); err != nil { log.Printf("[tunnel] config load: %v", err) }
+	registry := newSessionRegistry()
+	api := &apiServer{store: store, registry: registry, certs: certs, zPort: zPort, apiKey: config.APIKey, ingressPort: ingressPort, controlPort: controlPort, uiPort: uiPort, version: pluginVersion}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ui/api/status", api.handleStatus)
+	mux.HandleFunc("/ui/api/settings", api.handleSettings)
+	mux.HandleFunc("/ui/api/tunnels", api.handleTunnels)
+	mux.HandleFunc("/ui/api/tunnels/action", api.handleTunnelAction)
+	mux.HandleFunc("/ui/api/services/action", api.handleServiceAction)
+	mux.HandleFunc("/ui/api/client-stats", api.handleClientStats)
+	mux.HandleFunc("/ui/api/connectors/preferred", api.handlePreferredConnector)
+	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web", "/ui")
+	ui.AttachHandlerToMux(mux)
+	ui.RegisterTerminateHandler(func() { log.Println("[tunnel] bye") }, mux)
+	control := newControlServer(certs.TLSConfig(), store, registry)
+	go func() { if err := control.listenAndServe(fmt.Sprintf("0.0.0.0:%d", controlPort)); err != nil { log.Printf("[tunnel] control: %v", err) } }()
+	ingress := newIngressServer(store, registry)
+	go func() { if err := ingress.listenAndServe(fmt.Sprintf("127.0.0.1:%d", ingressPort)); err != nil { log.Printf("[tunnel] ingress: %v", err) } }()
+	log.Printf("[tunnel] ui :%d  ingress :%d  control :%d", uiPort, ingressPort, controlPort)
+	log.Fatalf("[tunnel] %v", http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", uiPort), mux))
+}
+
+func exePath() string {
+	if exe, err := os.Executable(); err == nil {
+		if resolved, err := filepath.EvalSymlinks(exe); err == nil { return resolved }
+		return exe
+	}
+	return "."
+}
+
+func workingDir() string {
+	if wd, err := os.Getwd(); err == nil { return wd }
+	return filepath.Dir(exePath())
+}
