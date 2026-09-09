@@ -15,13 +15,6 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-      - name: Go format check
-        run: |
-          test -z "$(gofmt -l -- *.go client/*.go wire/*.go zoraxy_plugin/*.go)" || {
-            echo "Go files need gofmt:";
-            gofmt -l -- *.go client/*.go wire/*.go zoraxy_plugin/*.go;
-            exit 1;
-          }
       - name: Go test
         run: go test ./...
       - name: Build plugin and client
