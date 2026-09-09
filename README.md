@@ -42,19 +42,7 @@ Add it under **App Store Settings → Plugin Store Sources**, resync the store, 
 
 ## Control node
 
-Configure the public hostname or IP address used by tunnel clients. Port `9443` is added automatically when omitted.
-
-Example:
-
-```text
-proxy.example.com
-```
-
-becomes:
-
-```text
-proxy.example.com:9443
-```
+Configure the public hostname or IP address used by tunnel clients. Port `9443` is added automatically when omitted. For example, `proxy.example.com` becomes `proxy.example.com:9443`.
 
 The plugin listens for tunnel clients on control port `9443` and exposes tunnel ingress to Zoraxy on local port `9080`.
 
@@ -89,32 +77,15 @@ docker compose pull && docker compose up -d
 
 Version 1.8.0 allows multiple connector hosts to authenticate to the same logical tunnel at the same time.
 
-Reuse the **same tunnel token** on every redundant host, but assign a **different stable connector ID** to each one:
-
-```text
-homelab-primary
-homelab-backup
-```
-
-For example, the second host can use the same Compose configuration with only this changed:
-
-```yaml
-      - --connector-id=homelab-backup
-```
+Reuse the **same tunnel token** on every redundant host, but assign a **different stable connector ID** to each one, for example `homelab-primary` and `homelab-backup`.
 
 The dashboard shows every unique connector separately. One online connector is selected as **Primary** and additional online connectors remain **Standby**.
 
 ### Preferred connector and automatic failback
 
-You can mark one connector as **Preferred** from the expanded tunnel view.
+You can mark one connector as **Preferred** from the expanded tunnel view. When the preferred connector is healthy, new tunnel traffic uses it. If it disconnects, an available standby connector automatically becomes Primary. When the preferred connector reconnects, new traffic automatically returns to it. Existing requests and WebSocket sessions are not intentionally terminated during the switch.
 
-Behavior:
-
-1. When the preferred connector is healthy, new tunnel traffic uses it.
-2. If it disconnects, an available standby connector automatically becomes Primary.
-3. Existing requests and WebSocket sessions are not intentionally terminated during a switch.
-4. When the preferred connector reconnects, new traffic automatically returns to it.
-5. Clearing the preference enables sticky automatic failover: the currently selected healthy Primary remains in use.
+Clearing the preference enables sticky automatic failover, where the currently selected healthy Primary remains in use.
 
 A connector ID identifies one connector instance. If a second client connects with the same connector ID, it replaces that specific connector session only; other redundant connectors remain connected.
 
@@ -124,11 +95,7 @@ Clients that do not specify `--connector-id` remain compatible and fall back to 
 
 Registered services map a public host to a target reachable by the selected tunnel connector.
 
-When an already-published service is edited:
-
-- Changing the public hostname automatically moves the installed Zoraxy route to the new hostname.
-- Changing TAGs updates the installed route's TAGs.
-- Changing the client target, path or TLS verification setting is applied to the tunnel configuration immediately and does not require recreating the Zoraxy route.
+When an already-published service is edited, changing the public hostname automatically moves the installed Zoraxy route to the new hostname, and changing TAGs updates the installed route's TAGs. Changes to the client target, path or TLS verification setting are applied to the tunnel configuration without recreating the Zoraxy route.
 
 ## Client CLI
 
