@@ -2,65 +2,17 @@ package main
 
 import (
 	"net/http"
+	"sort"
 	"time"
 )
 
-type clientStatsView struct {
-	Online          bool   `json:"online"`
-	Version         string `json:"version,omitempty"`
-	Hostname        string `json:"hostname,omitempty"`
-	OS              string `json:"os,omitempty"`
-	Arch            string `json:"arch,omitempty"`
-	RemoteAddr      string `json:"remote_addr,omitempty"`
-	ConnectedAt     string `json:"connected_at,omitempty"`
-	LastActivity    string `json:"last_activity,omitempty"`
-	Requests        uint64 `json:"requests"`
-	ActiveStreams   int    `json:"active_streams"`
-	BytesToClient   uint64 `json:"bytes_to_client"`
-	BytesFromClient uint64 `json:"bytes_from_client"`
-	ConnectionCount uint64 `json:"connection_count"`
-	ReconnectCount  uint64 `json:"reconnect_count"`
-}
+type connectorStatsView struct{ID string `json:"id"`;Online bool `json:"online"`;Active bool `json:"active"`;Preferred bool `json:"preferred"`;Version string `json:"version,omitempty"`;Hostname string `json:"hostname,omitempty"`;OS string `json:"os,omitempty"`;Arch string `json:"arch,omitempty"`;RemoteAddr string `json:"remote_addr,omitempty"`;ConnectedAt string `json:"connected_at,omitempty"`;LastActivity string `json:"last_activity,omitempty"`;Requests uint64 `json:"requests"`;ActiveStreams int `json:"active_streams"`;BytesToClient uint64 `json:"bytes_to_client"`;BytesFromClient uint64 `json:"bytes_from_client"`;ConnectionCount uint64 `json:"connection_count"`;ReconnectCount uint64 `json:"reconnect_count"`}
+type clientStatsView struct{Online bool `json:"online"`;Version string `json:"version,omitempty"`;Hostname string `json:"hostname,omitempty"`;OS string `json:"os,omitempty"`;Arch string `json:"arch,omitempty"`;RemoteAddr string `json:"remote_addr,omitempty"`;ConnectedAt string `json:"connected_at,omitempty"`;LastActivity string `json:"last_activity,omitempty"`;Requests uint64 `json:"requests"`;ActiveStreams int `json:"active_streams"`;BytesToClient uint64 `json:"bytes_to_client"`;BytesFromClient uint64 `json:"bytes_from_client"`;ConnectionCount uint64 `json:"connection_count"`;ReconnectCount uint64 `json:"reconnect_count"`;ConnectorCount int `json:"connector_count"`;OnlineConnectorCount int `json:"online_connector_count"`;ActiveConnectorID string `json:"active_connector_id,omitempty"`;PreferredConnectorID string `json:"preferred_connector_id,omitempty"`;Connectors []connectorStatsView `json:"connectors"`}
 
-// handleClientStats exposes only operational metadata for configured tunnel
-// clients. Tokens and other secrets are never included. Statistics are kept in
-// memory and reset when the plugin restarts.
-func (a *apiServer) handleClientStats(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	out := make(map[string]clientStatsView)
-	for _, tunnel := range a.store.snapshot() {
-		st, ok := a.registry.stats(tunnel.ID)
-		if !ok {
-			out[tunnel.ID] = clientStatsView{Online: false}
-			continue
-		}
-		view := clientStatsView{
-			Online:          st.Online,
-			Version:         st.ClientVersion,
-			Hostname:        st.ClientHostname,
-			OS:              st.ClientOS,
-			Arch:            st.ClientArch,
-			RemoteAddr:      st.RemoteAddr,
-			Requests:        st.Requests,
-			ActiveStreams:   st.ActiveStreams,
-			BytesToClient:   st.BytesToClient,
-			BytesFromClient: st.BytesFromClient,
-			ConnectionCount: st.ConnectionCount,
-		}
-		if st.ConnectionCount > 0 {
-			view.ReconnectCount = st.ConnectionCount - 1
-		}
-		if !st.Joined.IsZero() {
-			view.ConnectedAt = st.Joined.UTC().Format(time.RFC3339)
-		}
-		if !st.LastActivity.IsZero() {
-			view.LastActivity = st.LastActivity.UTC().Format(time.RFC3339)
-		}
-		out[tunnel.ID] = view
-	}
-	writeJSON(w, out)
+func (a *apiServer) handleClientStats(w http.ResponseWriter,r *http.Request){
+	if r.Method!=http.MethodGet{http.Error(w,"method not allowed",http.StatusMethodNotAllowed);return};out:=make(map[string]clientStatsView)
+	for _,tunnel:=range a.store.snapshot(){stats:=a.registry.statsAll(tunnel.ID);activeID:=a.registry.activeConnectorID(tunnel.ID,tunnel.PreferredConnectorID);view:=clientStatsView{Online:a.registry.online(tunnel.ID),ConnectorCount:len(stats),OnlineConnectorCount:a.registry.onlineCount(tunnel.ID),ActiveConnectorID:activeID,PreferredConnectorID:tunnel.PreferredConnectorID,Connectors:make([]connectorStatsView,0,len(stats))}
+		for _,st:=range stats{c:=connectorStatsView{ID:st.ConnectorID,Online:st.Online,Active:st.Online&&st.ConnectorID==activeID,Preferred:st.ConnectorID==tunnel.PreferredConnectorID,Version:st.ClientVersion,Hostname:st.ClientHostname,OS:st.ClientOS,Arch:st.ClientArch,RemoteAddr:st.RemoteAddr,Requests:st.Requests,ActiveStreams:st.ActiveStreams,BytesToClient:st.BytesToClient,BytesFromClient:st.BytesFromClient,ConnectionCount:st.ConnectionCount};if st.ConnectionCount>0{c.ReconnectCount=st.ConnectionCount-1};if !st.Joined.IsZero(){c.ConnectedAt=st.Joined.UTC().Format(time.RFC3339)};if !st.LastActivity.IsZero(){c.LastActivity=st.LastActivity.UTC().Format(time.RFC3339)};view.Connectors=append(view.Connectors,c);view.Requests+=st.Requests;view.ActiveStreams+=st.ActiveStreams;view.BytesToClient+=st.BytesToClient;view.BytesFromClient+=st.BytesFromClient;view.ConnectionCount+=st.ConnectionCount;view.ReconnectCount+=c.ReconnectCount;if c.Active{view.Version=c.Version;view.Hostname=c.Hostname;view.OS=c.OS;view.Arch=c.Arch;view.RemoteAddr=c.RemoteAddr;view.ConnectedAt=c.ConnectedAt;view.LastActivity=c.LastActivity}}
+		sort.SliceStable(view.Connectors,func(i,j int)bool{x,y:=view.Connectors[i],view.Connectors[j];if x.Active!=y.Active{return x.Active};if x.Preferred!=y.Preferred{return x.Preferred};if x.Online!=y.Online{return x.Online};return x.ID<y.ID});out[tunnel.ID]=view
+	};writeJSON(w,out)
 }
