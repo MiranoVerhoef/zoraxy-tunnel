@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 09.09.26
+### Changed
+- Redesign the plugin dashboard to match the compact Zoraxy management-table concept with a clear header, Control Node summary, tabs, search, filtering and pagination.
+- Present tunnels as dense management rows with status, service count, uptime, version, last activity and traffic visible without expanding them.
+- Show published services in compact nested rows with route state, target information, TLS warnings and focused action menus.
+- Move Control Node configuration into a dedicated Settings tab while keeping the active endpoint and ingress port visible at the top of the dashboard.
+- Make credential regeneration an explicit destructive action instead of presenting it as a normal update workflow.
+- Generate Docker and Compose setups with `ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest`; Compose also uses `pull_policy: always` so the configuration does not need to change for every client release.
+- Keep tunnel credentials stable across normal plugin and client updates.
+
 ## [1.7.0] - 09.09.26
 ### Added
 - Guided Control Node setup with endpoint validation and a live client-endpoint preview.
