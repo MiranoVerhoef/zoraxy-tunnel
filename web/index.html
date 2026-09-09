@@ -7,11 +7,20 @@
 <link rel="stylesheet" href="/darktheme.css">
 <meta name="zoraxy.csrf.Token" content="{{.csrfToken}}">
 <link rel="stylesheet" href="style.css">
+<style>
+#floatingMenuLayer{position:fixed;inset:0;pointer-events:none;z-index:2147483000}
+.floating-action-menu{position:fixed;min-width:210px;max-width:min(320px,calc(100vw - 24px));background:var(--theme_bg_primary,#22252b);border:1px solid var(--divider_color,#343842);border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.28);padding:6px;pointer-events:auto;color:var(--text_color,#eef1f5)}
+.floating-action-menu button{width:100%;border:0;background:transparent;color:inherit;text-align:left;padding:9px 10px;border-radius:7px;font-size:11.5px;cursor:pointer;white-space:normal}
+.floating-action-menu button:hover{background:var(--theme_advance,#1b1e23)}
+.floating-action-menu button.danger-item{color:#ef6d6d}
+.floating-action-menu .menu-sep{height:1px;background:var(--divider_color,#343842);margin:4px}
+.table-wrap .menu.open{visibility:hidden!important;pointer-events:none!important}
+</style>
 </head>
 <body>
 <div class="app-shell">
   <header class="app-header">
-    <div class="brandmark"><img src="https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.7.1" alt=""></div>
+    <div class="brandmark"><img src="https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.7.2" alt=""></div>
     <div class="brand-copy">
       <h1>Zoraxy Tunnel Enhanced</h1>
       <p>Secure reverse tunnel management for Zoraxy.</p>
@@ -102,7 +111,39 @@
 <div class="overlay" id="confirmModal"><div class="modal small"><div class="modal-head"><div><h2 id="confirmTitle">Confirm</h2><p id="confirmMsg"></p></div></div><div class="modal-actions"><button class="btn secondary" onclick="closeConfirm()">Cancel</button><button class="btn danger" onclick="runConfirm()">Confirm</button></div></div></div>
 <div class="overlay" id="installModal"><div class="modal small"><div class="modal-head"><div><h2>Install route</h2><p id="installMsg"></p></div></div><div class="note">Install only the route, or also request an SSL certificate using Zoraxy's configured ACME settings.</div><div class="modal-actions"><button class="btn secondary" onclick="closeInstall()">Cancel</button><button class="btn secondary" onclick="doInstall(false)">Route only</button><button class="btn primary" onclick="doInstall(true)">Route + SSL cert</button></div></div></div>
 <div class="overlay" id="downloadModal"><div class="modal small"><div class="modal-head"><div><h2>Download tunnel client</h2><p>Choose a build for the machine running your private service.</p></div><button class="close" onclick="closeModal('downloadModal')">×</button></div><div class="download-list" id="downloadLinks"></div></div></div>
+<div id="floatingMenuLayer"></div>
 <div class="toast" id="toast">Saved</div>
 <script src="app.js"></script>
+<script>
+(function(){
+  const layer=document.getElementById('floatingMenuLayer');
+  let anchorRect=null,floating=null;
+  function closeFloating(){layer.innerHTML='';floating=null;anchorRect=null}
+  function positionFloating(){
+    if(!floating||!anchorRect)return;
+    const margin=10,gap=6,r=floating.getBoundingClientRect();
+    let left=Math.max(margin,Math.min(anchorRect.right-r.width,window.innerWidth-r.width-margin));
+    let top=anchorRect.bottom+gap;
+    if(top+r.height>window.innerHeight-margin&&anchorRect.top-r.height-gap>=margin)top=anchorRect.top-r.height-gap;
+    top=Math.max(margin,Math.min(top,window.innerHeight-r.height-margin));
+    floating.style.left=Math.round(left)+'px';floating.style.top=Math.round(top)+'px';
+  }
+  function mirrorOpenMenu(){
+    const open=document.querySelector('.table-wrap .menu.open');
+    if(!open){closeFloating();return}
+    floating=document.createElement('div');floating.className='floating-action-menu';floating.innerHTML=open.innerHTML;
+    layer.innerHTML='';layer.appendChild(floating);positionFloating();
+  }
+  document.addEventListener('click',function(e){
+    const trigger=e.target.closest('[onclick*="toggleActionMenu"]');
+    if(trigger){anchorRect=trigger.getBoundingClientRect();setTimeout(mirrorOpenMenu,0);return}
+    if(e.target.closest('.floating-action-menu')){setTimeout(closeFloating,0);return}
+    closeFloating();
+  },true);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeFloating()});
+  window.addEventListener('resize',closeFloating);
+  window.addEventListener('scroll',closeFloating,true);
+})();
+</script>
 </body>
 </html>

@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.7.2] - 09.09.26
+### Fixed
+- Render tunnel and service action menus in a viewport-level floating layer so they are no longer clipped by the tunnel table, expanded rows, or pagination footer.
+- Automatically position action menus above or below their trigger depending on available viewport space.
+- Close floating menus on outside click, Escape, scrolling, or window resize for more predictable interaction.
+
 ## [1.7.1] - 09.09.26
 ### Changed
 - Redesign the plugin dashboard to match the compact Zoraxy management-table concept with a clear header, Control Node summary, tabs, search, filtering and pagination.
