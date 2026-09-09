@@ -1,172 +1,157 @@
 # Zoraxy Tunnel Enhanced
 
-An enhanced self-hosted, Cloudflare-Tunnel-style reverse tunnel for [Zoraxy](https://github.com/tobychui/zoraxy).
-Run the plugin on your Zoraxy box, expose one TLS port, and reach services
-behind NAT/firewalls from anywhere — without an external account.
+Self-hosted reverse tunneling for Zoraxy with automated route management, managed clients, redundant connectors and TLS controls.
 
-This fork is published independently as **Zoraxy Tunnel Enhanced** with plugin ID
-`com.miranoverhoef.zoraxy-tunnel`. It uses its own releases, plugin-store entry,
-and container image and does not update from the upstream plugin ID.
+## Features
 
-```
-Browser ──▶ Zoraxy (TLS) ──▶ plugin ingress :9080
-                                   │  (yamux stream over TLS)
-                                   ▼
-                            tunnel-client ──▶ http://127.0.0.1:3000 (your service)
-```
+- Self-hosted reverse tunnels integrated with Zoraxy.
+- Automatic Zoraxy route installation, removal and TAG management.
+- Optional ACME certificate issuance when installing routes.
+- Per-service TLS verification controls for private HTTPS targets.
+- Client telemetry for version, platform, uptime, activity and traffic.
+- Docker and Docker Compose client deployment using `:latest`.
+- Stable tunnel credentials across normal plugin and client updates.
+- Multiple simultaneous connectors per tunnel for redundancy.
+- Preferred connector selection with automatic failover and failback.
 
-## How it works
+## Requirements
 
-The plugin runs **three** listeners:
+- Zoraxy 3.2.0 or newer.
+- Go 1.23 or newer when building from source.
 
-| Port | Kind | Purpose |
-|------|------|---------|
-| dynamic | HTTP | Dashboard UI (`/ui`) + JSON API (`/ui/api/*`), proxied by Zoraxy |
-| `9080` (static) | HTTP | Ingress — public traffic Zoraxy routes here, dispatched by `Host` |
-| `9443` (static) | TLS | Control plane — tunnel clients dial this |
-
-On first start the plugin mints a **self-signed cert valid 99 years** and shows
-its **SHA256 fingerprint** in the dashboard. Clients pin that fingerprint during
-the TLS handshake — if the cert doesn't match, the connection is killed before
-any data is exchanged. Authorization is a per-tunnel **token** (stored only as
-a hash).
-
-## Trust model
-
-1. Plugin generates cert → fingerprint shown in UI.
-2. Client connects to `:9443`, computes SHA256 of the presented cert, compares to
-   `--fingerprint`. Mismatch → connection dropped.
-3. Client authenticates with `--token`; plugin maps it to a tunnel by hash.
-4. One live client per tunnel (a reconnecting client replaces the previous one).
-
-## Setup
-
-### 1. Build
+## Build
 
 ```bash
-git clone https://github.com/MiranoVerhoef/zoraxy-tunnel
+git clone https://github.com/MiranoVerhoef/zoraxy-tunnel.git
 cd zoraxy-tunnel
-go build -o zoraxy-tunnel .          # the plugin
-go build -o tunnel-client ./client   # the client
+go build -o zoraxy-tunnel .
+go build -o tunnel-client ./client
 ```
 
-Pre-built binaries for both are published under
-[releases](https://github.com/MiranoVerhoef/zoraxy-tunnel/releases).
+Release binaries are available from the repository's GitHub Releases page.
 
-### 2. Install the plugin
+## Plugin installation
 
-For a clean switch from the upstream plugin, uninstall the old
-`com.sniffingsugar.zoraxy-tunnel` installation first. This fork has its own
-plugin ID and store identity, so reinstalling is the intended migration path.
-
-For a manual binary installation, drop the binary into Zoraxy's plugin folder
-(folder name must equal binary name):
-
-```
-plugins/zoraxy-tunnel/zoraxy-tunnel
-```
-
-Restart Zoraxy. Open the plugin UI.
-
-### 3. Configure the node
-
-In the dashboard:
-
-1. Set **Server address** to where clients reach your control port, e.g.
-   `tunnel.example.com:9443` (port-forward/expose `9443` to the internet).
-2. Optionally set the **Default Zoraxy TAG** used for newly registered services.
-   It defaults to `ZoraxyTunnel` and can be overridden per service.
-3. Note the **fingerprint**.
-
-### 4. Create a tunnel + connect a client
-
-Click **Create tunnel**, name it, and copy the command the modal shows. There are
-three ready-to-paste variants:
-
-**CLI**
-```bash
-tunnel-client \
-  --server tunnel.example.com:9443 \
-  --token zt_… \
-  --fingerprint "AB:CD:EF:…"
-```
-
-**Docker**
-```bash
-docker run -d --name tunnel-client --restart unless-stopped \
-  --network host \
-  ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest \
-  --server tunnel.example.com:9443 \
-  --token zt_… \
-  --fingerprint "AB:CD:EF:…"
-```
-
-**docker-compose.yml**
-```yaml
-services:
-  tunnel-client:
-    image: ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest
-    container_name: tunnel-client
-    restart: unless-stopped
-    network_mode: host          # Linux: 127.0.0.1 targets work as-is
-    command:
-      - --server=tunnel.example.com:9443
-      - --token=zt_…
-      - --fingerprint=AB:CD:EF:…
-```
-
-> The token is shown **once**. Only a hash is stored afterwards — regenerate it
-> from the tunnel's menu if you lose it.
-
-> With Docker, the client reaches services on the **host**. On Linux
-> `network_mode: host` makes `127.0.0.1:3000` work directly. On macOS/Windows
-> Docker Desktop, drop `network_mode: host` and target `host.docker.internal`
-> instead in each service's target.
-
-### 5. Register a service + install the route
-
-Inside a tunnel, **Register service**:
-
-- **Public host** — e.g. `app.example.com` (the domain the world visits)
-- **Path prefix** — optional, e.g. `/api`
-- **Local target** — what the *client* dials, e.g. `http://127.0.0.1:3000`
-- **Zoraxy TAG(s)** — optional comma-separated tags applied when the route is installed
-- **Skip TLS certificate verification** — optional for HTTPS targets using a self-signed or otherwise untrusted certificate
-
-Then click **Install route**. The plugin creates a Zoraxy proxy rule
-`app.example.com → 127.0.0.1:9080` for you and applies the configured tags.
-Existing services can be edited without deleting and recreating them; when the
-public host of an installed service changes, the managed Zoraxy route is moved
-to the new host. Deleting the service or tunnel removes that route automatically.
-
-Public HTTP(S) and WebSockets are both supported and streamed. TLS verification
-is enabled for HTTPS targets by default and can be disabled per service when
-needed.
-
-## Enhanced dashboard
-
-Version 1.4 introduces a cleaner dashboard with at-a-glance client, tunnel and
-port status, a more compact control-node panel, improved tunnel/service cards,
-and a dedicated client-download dialog while keeping Zoraxy light/dark theme
-integration.
-
-## Custom Zoraxy plugin store
-
-Add this source in **App Store Settings → Plugin Store Sources**:
+The custom Zoraxy Plugin Store source is:
 
 ```text
 https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/directories/index2.json
 ```
 
-The custom source publishes the independent plugin ID and downloads releases
-only from this repository.
+Add it under **App Store Settings → Plugin Store Sources**, resync the store, then install **Zoraxy Tunnel Enhanced**.
 
-## Requirements
+## Control node
 
-- Zoraxy 3.2.0+ (plugin system)
-- One publicly reachable TCP port for `:9443` (port-forward / expose)
-- Go 1.23+ to build from source
+Configure the public hostname or IP address used by tunnel clients. Port `9443` is added automatically when omitted.
+
+Example:
+
+```text
+proxy.example.com
+```
+
+becomes:
+
+```text
+proxy.example.com:9443
+```
+
+The plugin listens for tunnel clients on control port `9443` and exposes tunnel ingress to Zoraxy on local port `9080`.
+
+## Tunnel clients
+
+A tunnel credential is generated when a tunnel is created. The plaintext token is only displayed at creation or when intentionally regenerated. Normal software updates do not rotate it.
+
+### Docker Compose
+
+```yaml
+services:
+  tunnel-client:
+    image: ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest
+    pull_policy: always
+    container_name: tunnel-client
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --server=proxy.example.com:9443
+      - --token=zt_your_token
+      - --fingerprint=YOUR_CERTIFICATE_FINGERPRINT
+      - --connector-id=homelab-primary
+```
+
+Update the client without changing the Compose configuration or token:
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+## Redundant connectors
+
+Version 1.8.0 allows multiple connector hosts to authenticate to the same logical tunnel at the same time.
+
+Reuse the **same tunnel token** on every redundant host, but assign a **different stable connector ID** to each one:
+
+```text
+homelab-primary
+homelab-backup
+```
+
+For example, the second host can use the same Compose configuration with only this changed:
+
+```yaml
+      - --connector-id=homelab-backup
+```
+
+The dashboard shows every unique connector separately. One online connector is selected as **Primary** and additional online connectors remain **Standby**.
+
+### Preferred connector and automatic failback
+
+You can mark one connector as **Preferred** from the expanded tunnel view.
+
+Behavior:
+
+1. When the preferred connector is healthy, new tunnel traffic uses it.
+2. If it disconnects, an available standby connector automatically becomes Primary.
+3. Existing requests and WebSocket sessions are not intentionally terminated during a switch.
+4. When the preferred connector reconnects, new traffic automatically returns to it.
+5. Clearing the preference enables sticky automatic failover: the currently selected healthy Primary remains in use.
+
+A connector ID identifies one connector instance. If a second client connects with the same connector ID, it replaces that specific connector session only; other redundant connectors remain connected.
+
+Clients that do not specify `--connector-id` remain compatible and fall back to their reported hostname, but an explicit stable ID is recommended for Docker deployments and redundancy.
+
+## Services and route synchronization
+
+Registered services map a public host to a target reachable by the selected tunnel connector.
+
+When an already-published service is edited:
+
+- Changing the public hostname automatically moves the installed Zoraxy route to the new hostname.
+- Changing TAGs updates the installed route's TAGs.
+- Changing the client target, path or TLS verification setting is applied to the tunnel configuration immediately and does not require recreating the Zoraxy route.
+
+## Client CLI
+
+```text
+tunnel-client --server HOST[:PORT] --token TOKEN --fingerprint FP --connector-id ID
+```
+
+Useful options:
+
+```text
+--server         Public tunnel control endpoint. Port 9443 is used when omitted.
+--token          Persistent tunnel credential generated by the dashboard.
+--fingerprint    Expected SHA-256 certificate fingerprint for the control node.
+--connector-id   Stable unique connector identifier for redundancy.
+--version        Print the client version and exit.
+```
+
+## Security notes
+
+- Tunnel tokens are stored by the plugin as SHA-256 hashes; plaintext tokens are only returned when created or regenerated.
+- Clients pin the control node certificate fingerprint.
+- Skip TLS verification is configured per service and should only be enabled for trusted private HTTPS targets that use self-signed or otherwise untrusted certificates.
 
 ## License
 
-MIT
+This project retains the upstream MIT license and is maintained as an independent enhanced fork.
