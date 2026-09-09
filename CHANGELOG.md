@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 09.09.26
+### Added
+- Multiple simultaneous connectors per tunnel for active/standby redundancy using one persistent tunnel credential.
+- Stable `--connector-id` support so each host can be tracked independently and reconnect without replacing other connectors.
+- Preferred connector selection with automatic failback: standby takes over when the preferred connector is unavailable, and new traffic returns to the preferred connector when it reconnects.
+- Per-connector telemetry for hostname, platform, version, remote address, uptime, activity, traffic and reconnect count.
+- Connector management UI showing Primary, Standby, Preferred and Offline states under each tunnel.
+- CI validation for Go tests/builds, browser JavaScript and plugin-store metadata.
+
+### Changed
+- Tunnel rows now aggregate the status and traffic of all connectors while showing the currently active connector.
+- Generated CLI, Docker and Compose examples include a stable connector ID; redundant hosts reuse the same token with different connector IDs.
+- Action menus no longer contribute hidden overflow to the tunnel table, removing the unwanted vertical scrollbar while retaining viewport-level floating menus.
+
 ## [1.7.2] - 09.09.26
 ### Fixed
 - Render tunnel and service action menus in a viewport-level floating layer so they are no longer clipped by the tunnel table, expanded rows, or pagination footer.
