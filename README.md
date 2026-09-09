@@ -28,23 +28,19 @@ go build -o zoraxy-tunnel .
 go build -o tunnel-client ./client
 ```
 
-Release binaries are available from the repository's GitHub Releases page.
-
 ## Plugin installation
 
-The custom Zoraxy Plugin Store source is:
+Add this custom Zoraxy Plugin Store source under **App Store Settings → Plugin Store Sources**, then resync the store:
 
 ```text
 https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/directories/index2.json
 ```
 
-Add it under **App Store Settings → Plugin Store Sources**, resync the store, then install **Zoraxy Tunnel Enhanced**.
+Install **Zoraxy Tunnel Enhanced** from the store.
 
 ## Control node
 
-Configure the public hostname or IP address used by tunnel clients. Port `9443` is added automatically when omitted. For example, `proxy.example.com` becomes `proxy.example.com:9443`.
-
-The plugin listens for tunnel clients on control port `9443` and exposes tunnel ingress to Zoraxy on local port `9080`.
+Configure the public hostname or IP address used by tunnel clients. Port `9443` is added automatically when omitted. The plugin exposes tunnel ingress back to Zoraxy on local port `9080`.
 
 ## Tunnel clients
 
@@ -75,35 +71,29 @@ docker compose pull && docker compose up -d
 
 ## Redundant connectors
 
-Version 1.8.0 allows multiple connector hosts to authenticate to the same logical tunnel at the same time.
-
-Reuse the **same tunnel token** on every redundant host, but assign a **different stable connector ID** to each one, for example `homelab-primary` and `homelab-backup`.
+Version 1.8.0 allows multiple connector hosts to authenticate to the same logical tunnel at the same time. Reuse the **same tunnel token** on every redundant host, but assign a **different stable connector ID** to each one, for example `homelab-primary` and `homelab-backup`.
 
 The dashboard shows every unique connector separately. One online connector is selected as **Primary** and additional online connectors remain **Standby**.
 
 ### Preferred connector and automatic failback
 
-You can mark one connector as **Preferred** from the expanded tunnel view. When the preferred connector is healthy, new tunnel traffic uses it. If it disconnects, an available standby connector automatically becomes Primary. When the preferred connector reconnects, new traffic automatically returns to it. Existing requests and WebSocket sessions are not intentionally terminated during the switch.
+You can mark one connector as **Preferred** from the expanded tunnel view. When it is healthy, new tunnel traffic uses it. If it disconnects, an available standby connector automatically becomes Primary. When the preferred connector reconnects, new traffic automatically returns to it. Existing requests and WebSocket sessions are not intentionally terminated during the switch.
 
 Clearing the preference enables sticky automatic failover, where the currently selected healthy Primary remains in use.
 
-A connector ID identifies one connector instance. If a second client connects with the same connector ID, it replaces that specific connector session only; other redundant connectors remain connected.
+A connector ID identifies one connector instance. If a second client connects with the same connector ID, it replaces only that specific connector session; other redundant connectors remain connected.
 
 Clients that do not specify `--connector-id` remain compatible and fall back to their reported hostname, but an explicit stable ID is recommended for Docker deployments and redundancy.
 
 ## Services and route synchronization
 
-Registered services map a public host to a target reachable by the selected tunnel connector.
-
-When an already-published service is edited, changing the public hostname automatically moves the installed Zoraxy route to the new hostname, and changing TAGs updates the installed route's TAGs. Changes to the client target, path or TLS verification setting are applied to the tunnel configuration without recreating the Zoraxy route.
+Registered services map a public host to a target reachable by the selected tunnel connector. Editing a published service keeps Zoraxy synchronized: hostname changes move the route, TAG changes update route TAGs, and target/path/TLS changes are applied to tunnel configuration without recreating the route.
 
 ## Client CLI
 
 ```text
 tunnel-client --server HOST[:PORT] --token TOKEN --fingerprint FP --connector-id ID
 ```
-
-Useful options:
 
 ```text
 --server         Public tunnel control endpoint. Port 9443 is used when omitted.
