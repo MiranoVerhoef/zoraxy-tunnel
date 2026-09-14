@@ -19,7 +19,17 @@ func ReadBody(w io.Writer,r io.Reader)error{for{frame,err:=ReadFrame(r);if err!=
 func PumpRawToFrames(dst io.Writer,src io.Reader)error{buf:=make([]byte,32<<10);for{n,err:=src.Read(buf);if n>0{if e:=WriteFrame(dst,buf[:n]);e!=nil{return e}};if err!=nil{return err}}}
 func PumpFramesToRaw(dst io.Writer,src io.Reader)error{for{frame,err:=ReadFrame(src);if err!=nil{return err};if frame==nil{return nil};if _,err:=dst.Write(frame);err!=nil{return err}}}
 
-type AuthReq struct { Token string `json:"token"`; Version string `json:"version,omitempty"`; Hostname string `json:"hostname,omitempty"`; OS string `json:"os,omitempty"`; Arch string `json:"arch,omitempty"`; ConnectorID string `json:"connector_id,omitempty"`; UpdateMode string `json:"update_mode,omitempty"` }
+type AuthReq struct {
+	Token string `json:"token"`
+	Version string `json:"version,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
+	OS string `json:"os,omitempty"`
+	Arch string `json:"arch,omitempty"`
+	ConnectorID string `json:"connector_id,omitempty"`
+	UpdateMode string `json:"update_mode,omitempty"`
+	UpdaterUser string `json:"updater_user,omitempty"`
+	UpdaterPassword string `json:"updater_password,omitempty"`
+}
 type AuthResp struct { OK bool `json:"ok"`; Error string `json:"error,omitempty"`; TunnelID string `json:"tunnel_id,omitempty"`; ConnectorID string `json:"connector_id,omitempty"` }
 type RequestHead struct { Target string `json:"target"`; Method string `json:"method"`; URL string `json:"url"`; Host string `json:"host"`; Headers map[string]string `json:"headers"`; IsWebSocket bool `json:"is_websocket"`; SkipTLSVerify bool `json:"skip_tls_verify"` }
 type ResponseHead struct { Status int `json:"status"`; Headers map[string]string `json:"headers"` }

@@ -1,6 +1,33 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.12.0] - 14.09.26
+### Fixed
+- Restore automatic Docker updater startup with WUD 9.x by generating the required administrator credentials in every new Automatic Compose configuration.
+- Authenticate dashboard **Update now** requests to the WUD API instead of relying on the anonymous API access removed in WUD 9.
+- Older automatic connectors that do not provide updater-control credentials are now identified explicitly instead of exposing a button that cannot work.
+
+### Added
+- Per-connector random WUD administrator password generated only when Automatic update mode is selected.
+- The tunnel client securely reports updater-control credentials over the existing TLS-protected control connection; the plugin keeps them in memory only and never returns them through telemetry or the dashboard API.
+- Connector telemetry now reports whether authenticated updater control is available, without exposing any credential values.
+
+### Changed
+- Automatic Compose setup configures matching WUD and tunnel-client updater credentials automatically; users no longer have to add WUD authentication variables themselves.
+- CI now runs automatically on `main` and pull requests instead of every intermediate `release/**` commit. This avoids expected red builds while multi-file release metadata is still being assembled.
+- CI uses concurrency cancellation and clearer metadata mismatch messages.
+- Plugin and client version bumped to v1.12.0.
+
+## [1.11.0] - 14.09.26
+### Added
+- Live connector status refresh every five seconds, with immediate refresh when the dashboard regains focus.
+- First tunnel setup now offers the same Automatic or Manual update choice as additional connector enrollment.
+- Automatic Docker connectors can expose an **Update now** action from their connector row.
+
+### Changed
+- Primary dashboard actions such as Download client, Create tunnel, and Add connector use stronger interactive button styling.
+- Automatic connector Compose generation includes the updater-control endpoint required by the dashboard.
+
 ## [1.10.2] - 14.09.26
 ### Fixed
 - Replace the oversized/cropped plugin icon with a compact padded square asset suitable for Zoraxy plugin and sidebar rendering.

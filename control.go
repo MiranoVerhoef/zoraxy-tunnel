@@ -71,6 +71,11 @@ func (c *controlServer) handle(conn net.Conn) {
 		return
 	}
 	recordConnectorMode(tunnelID, connectorID, req.UpdateMode)
+	if normalizeConnectorUpdateMode(req.UpdateMode) == "auto" {
+		recordConnectorUpdaterCredentials(tunnelID, connectorID, req.UpdaterUser, req.UpdaterPassword)
+	} else {
+		recordConnectorUpdaterCredentials(tunnelID, connectorID, "", "")
+	}
 	now := time.Now().UTC()
 	s := &session{yamux: sess, connectorID: connectorID, joined: now, lastActivity: now, remoteAddr: remote, clientVersion: req.Version, clientHostname: req.Hostname, clientOS: req.OS, clientArch: req.Arch}
 	if c.registry.register(tunnelID, connectorID, s) {
