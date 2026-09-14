@@ -27,6 +27,7 @@ jobs:
           node --check web/connectors.js
           node --check web/enrollment.js
           node --check web/health.js
+          node --check web/v111.js
       - name: Validate store metadata
         run: |
           jq -e --slurpfile intro .introspect '
