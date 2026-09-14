@@ -22,7 +22,7 @@ import (
 	"zoraxy-tunnel/wire"
 )
 
-const ( clientVersion="v1.10.3"; defaultControlPort="9443"; dialTimeout=10*time.Second; initialBackoff=time.Second; maxBackoff=30*time.Second )
+const ( clientVersion="v1.11.0"; defaultControlPort="9443"; dialTimeout=10*time.Second; initialBackoff=time.Second; maxBackoff=30*time.Second )
 
 func main(){
 	server:=flag.String("server","","tunnel server hostname or host:port (port 9443 is used when omitted)"); token:=flag.String("token","","tunnel token (from the dashboard)"); fingerprint:=flag.String("fingerprint","","expected SHA256 cert fingerprint, e.g. AB:CD:EF:..."); connectorID:=flag.String("connector-id","","stable unique connector id used for redundancy and preferred-connector failback"); showVersion:=flag.Bool("version",false,"print tunnel client version and exit"); flag.Parse()
@@ -37,7 +37,7 @@ func normalizeServerAddress(raw string)(string,error){s:=strings.TrimSpace(raw);
 
 func run(server,token,wantFingerprint,connectorID string)(bool,error){
 	rawConn,err:=net.DialTimeout("tcp",server,dialTimeout);if err!=nil{return false,fmt.Errorf("dial: %w",err)};conn:=tls.Client(rawConn,&tls.Config{InsecureSkipVerify:true,VerifyPeerCertificate:verifyFingerprint(wantFingerprint),MinVersion:tls.VersionTLS12});ctx,cancel:=context.WithTimeout(context.Background(),dialTimeout);defer cancel();if err:=conn.HandshakeContext(ctx);err!=nil{rawConn.Close();return false,fmt.Errorf("tls handshake: %w",err)};defer conn.Close();log.Printf("[client] tls connected to %s",server)
-	sess,err:=yamux.Client(conn,yamux.DefaultConfig());if err!=nil{return false,fmt.Errorf("yamux: %w",err)};defer sess.Close();auth,err:=sess.Open();if err!=nil{return false,err};hostname,_:=os.Hostname();if err:=wire.WriteJSON(auth,wire.AuthReq{Token:token,Version:clientVersion,Hostname:hostname,OS:runtime.GOOS,Arch:runtime.GOARCH,ConnectorID:connectorID});err!=nil{return false,err};var resp wire.AuthResp;if err:=wire.ReadJSON(auth,&resp);err!=nil{return false,err};auth.Close();if !resp.OK{return false,errors.New("auth rejected: "+resp.Error)};acceptedID:=resp.ConnectorID;if acceptedID==""{acceptedID=connectorID};log.Printf("[client] authenticated, tunnel=%s connector=%s version=%s",resp.TunnelID,acceptedID,clientVersion)
+	sess,err:=yamux.Client(conn,yamux.DefaultConfig());if err!=nil{return false,fmt.Errorf("yamux: %w",err)};defer sess.Close();auth,err:=sess.Open();if err!=nil{return false,err};hostname,_:=os.Hostname();updateMode:=strings.TrimSpace(os.Getenv("ZORAXY_TUNNEL_UPDATE_MODE"));if err:=wire.WriteJSON(auth,wire.AuthReq{Token:token,Version:clientVersion,Hostname:hostname,OS:runtime.GOOS,Arch:runtime.GOARCH,ConnectorID:connectorID,UpdateMode:updateMode});err!=nil{return false,err};var resp wire.AuthResp;if err:=wire.ReadJSON(auth,&resp);err!=nil{return false,err};auth.Close();if !resp.OK{return false,errors.New("auth rejected: "+resp.Error)};acceptedID:=resp.ConnectorID;if acceptedID==""{acceptedID=connectorID};log.Printf("[client] authenticated, tunnel=%s connector=%s version=%s",resp.TunnelID,acceptedID,clientVersion)
 	for{stream,err:=sess.Accept();if err!=nil{return true,fmt.Errorf("session ended: %w",err)};go handleStream(stream)}
 }
 
