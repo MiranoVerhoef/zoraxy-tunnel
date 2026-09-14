@@ -1,89 +1,80 @@
 # Zoraxy Tunnel Enhanced
 
-Self-hosted reverse tunneling for Zoraxy with automated route management, managed clients, redundant connectors and TLS controls.
+Self-hosted reverse tunnels for Zoraxy with automated routing, redundant connectors, service health monitoring, activity history, and TLS controls.
 
-## Features
-- Self-hosted reverse tunnels integrated with Zoraxy.
-- Automatic Zoraxy route installation, removal and TAG management.
-- Optional ACME certificate issuance when installing routes.
-- Per-service TLS verification controls for private HTTPS targets.
-- Client telemetry for version, platform, uptime, activity and traffic.
-- Docker and Docker Compose client deployment using `:latest`.
-- Stable tunnel credentials across normal plugin and client updates.
-- Multiple simultaneous connectors per tunnel for redundancy.
+## Highlights
+
+- Multiple connectors per logical tunnel with active/standby redundancy.
 - Preferred connector selection with automatic failover and failback.
+- Per-connector telemetry and service health checks.
+- Persistent activity history.
+- Zoraxy route automation and optional ACME certificate requests.
+- Stable Docker client configuration using `ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest`.
+- Non-destructive connector enrollment: adding a connector does not rotate credentials already in use.
+- Optional automatic Docker client updates via a dedicated What's Up Docker (WUD) updater sidecar.
 
-## Requirements
-- Zoraxy 3.2.0 or newer.
-- Go 1.23 or newer when building from source.
+## Connector enrollment
+
+Create a tunnel once, then add as many connectors as you need. Each additional connector can have its own one-time credential, so existing connectors remain online when another host is added.
+
+The dashboard offers two Docker setup modes when adding a connector:
+
+### Automatic updates
+
+The generated Compose stack includes a WUD updater sidecar. WUD watches the tunnel client's mutable `:latest` image by digest and recreates that client when a new image is available.
+
+Only the updater sidecar receives the Docker socket:
+
+```yaml
+volumes:
+  - /var/run/docker.sock:/var/run/docker.sock
+```
+
+> Docker socket access is highly privileged and can effectively control the Docker host. Use this mode only on hosts where that access is acceptable.
+
+### Manual updates
+
+No Docker socket is mounted. The connector continues to use `:latest`, but you decide when it is recreated:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Tunnel credentials remain unchanged during normal client or plugin upgrades.
 
 ## Build
+
+Requirements: Go 1.23+
+
 ```bash
-git clone https://github.com/MiranoVerhoef/zoraxy-tunnel.git
-cd zoraxy-tunnel
 go build -o zoraxy-tunnel .
 go build -o tunnel-client ./client
 ```
 
-## Plugin installation
-Add this custom Zoraxy Plugin Store source under **App Store Settings → Plugin Store Sources**, then resync the store:
+## Zoraxy plugin installation
+
+Zoraxy 3.2.0+ is recommended. Add this repository's plugin index as a community source:
+
 ```text
 https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/directories/index2.json
 ```
-Install **Zoraxy Tunnel Enhanced** from the store.
 
-## Control node
-Configure the public hostname or IP address used by tunnel clients. Port `9443` is added automatically when omitted. The plugin exposes tunnel ingress back to Zoraxy on local port `9080`.
+The plugin store handles the correct binary for the Zoraxy host platform.
 
-## Tunnel clients
-A tunnel credential is generated when a tunnel is created. The plaintext token is only displayed at creation or when intentionally regenerated. Normal software updates do not rotate it.
+## Client
 
-### Docker Compose
-```yaml
-services:
-  tunnel-client:
-    image: ghcr.io/miranoverhoef/zoraxy-tunnel-client:latest
-    pull_policy: always
-    container_name: tunnel-client
-    restart: unless-stopped
-    network_mode: host
-    command:
-      - --server=proxy.example.com:9443
-      - --token=zt_your_token
-      - --fingerprint=YOUR_CERTIFICATE_FINGERPRINT
-      - --connector-id=homelab-primary
-```
-Update the client without changing the Compose configuration or token:
-```bash
-docker compose pull && docker compose up -d
-```
+The dashboard generates the correct command after a tunnel or connector credential is created. A client uses:
 
-## Redundant connectors
-Version 1.8.0 allows multiple connector hosts to authenticate to the same logical tunnel at the same time. Reuse the **same tunnel token** on every redundant host, but assign a **different stable connector ID** to each one, for example `homelab-primary` and `homelab-backup`.
-
-The dashboard shows every unique connector separately. One online connector is selected as **Primary** and additional online connectors remain **Standby**.
-
-### Preferred connector and automatic failback
-You can mark one connector as **Preferred** from the expanded tunnel view. When it is healthy, new tunnel traffic uses it. If it disconnects, an available standby connector automatically becomes Primary. When the preferred connector reconnects, new traffic automatically returns to it. Existing requests and WebSocket sessions are not intentionally terminated during the switch.
-
-Clearing the preference enables sticky automatic failover, where the currently selected healthy Primary remains in use.
-
-A connector ID identifies one connector instance. If a second client connects with the same connector ID, it replaces only that specific connector session; other redundant connectors remain connected.
-
-Clients that do not specify `--connector-id` remain compatible and fall back to their reported hostname, but an explicit stable ID is recommended for Docker deployments and redundancy.
-
-## Services and route synchronization
-Registered services map a public host to a target reachable by the selected tunnel connector. Editing a published service keeps Zoraxy synchronized: hostname changes move the route, TAG changes update route TAGs, and target/path/TLS changes are applied to tunnel configuration without recreating the route.
-
-## Client CLI
 ```text
-tunnel-client --server HOST[:PORT] --token TOKEN --fingerprint FP --connector-id ID
+--server HOST[:9443]
+--token TOKEN
+--fingerprint SHA256_FINGERPRINT
+--connector-id UNIQUE_CONNECTOR_ID
 ```
 
-## Security notes
-- Tunnel tokens are stored by the plugin as SHA-256 hashes; plaintext tokens are only returned when created or regenerated.
-- Clients pin the control node certificate fingerprint.
-- Skip TLS verification is configured per service and should only be enabled for trusted private HTTPS targets that use self-signed or otherwise untrusted certificates.
+Use a different stable connector ID for each redundant host.
 
 ## License
-This project retains the upstream MIT license and is maintained as an independent enhanced fork.
+
+This project remains licensed under the repository's existing MIT license and is based on the original `sniffingsugar/zoraxy-tunnel` project.
