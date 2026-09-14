@@ -35,6 +35,8 @@ jobs:
           node --check web/enrollment.js
           node --check web/health.js
           node --check web/v111.js
+          node --check web/setup.js
+          node --check web/v113.js
 
       - name: Validate store metadata
         shell: bash

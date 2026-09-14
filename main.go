@@ -21,7 +21,7 @@ const (
 
 const (
 	verMajor = 1
-	verMinor = 12
+	verMinor = 13
 	verPatch = 0
 )
 
@@ -33,7 +33,7 @@ var pluginSpec = &zp.IntroSpect{
 	Author:        "Mirano Verhoef",
 	AuthorContact: "https://github.com/MiranoVerhoef",
 	Description:   "Secure self-hosted reverse tunneling for Zoraxy with automated routing, redundant connectors, service health monitoring, and TLS controls.",
-	URL:           "https://github.com/MiranoVerhoef/zoraxy-tunnel",
+	URL:           "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced",
 	Type:          zp.PluginType_Utilities,
 	VersionMajor:  verMajor,
 	VersionMinor:  verMinor,
@@ -64,6 +64,10 @@ func main() {
 	pluginDir := workingDir()
 	log.Printf("[tunnel] data dir: %s", pluginDir)
 	appEvents.setPath(filepath.Join(pluginDir, "events.json"))
+	appSetup = newSetupStateStore(pluginDir)
+	if err := appSetup.load(); err != nil {
+		log.Printf("[tunnel] setup state load: %v", err)
+	}
 
 	if icon, err := webFS.ReadFile("icon.png"); err == nil {
 		iconPath := filepath.Join(filepath.Dir(exePath()), "icon.png")
@@ -88,6 +92,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ui/api/status", api.handleStatus)
 	mux.HandleFunc("/ui/api/settings", api.handleSettings)
+	mux.HandleFunc("/ui/api/setup-state", api.handleSetupState)
 	mux.HandleFunc("/ui/api/tunnels", api.handleTunnels)
 	mux.HandleFunc("/ui/api/tunnels/action", api.handleTunnelAction)
 	mux.HandleFunc("/ui/api/services/action", api.handleServiceAction)

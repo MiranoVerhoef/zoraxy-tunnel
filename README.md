@@ -13,6 +13,15 @@ Self-hosted reverse tunnels for Zoraxy with automated routing, redundant connect
 - Non-destructive connector enrollment: adding a connector does not rotate credentials already in use.
 - Optional automatic Docker client updates via a dedicated What's Up Docker (WUD) updater sidecar.
 - Authenticated dashboard **Update now** control for Automatic Docker connectors.
+- Guided first-run setup with connection verification and optional redundant connector enrollment.
+
+## Guided setup
+
+Fresh plugin installs open a guided setup wizard that walks through the Control Node address, first tunnel creation, client installation and connection verification. Installation commands are collapsed by default instead of filling the screen with Compose text.
+
+After a connector credential is created, the wizard checks the live connector telemetry every two seconds. **Continue** becomes available when the expected connector ID is actually online. You can choose **Setup later** at any point, rerun the wizard from Settings, and add another connector for redundancy before finishing.
+
+The same connection-aware setup is used after normal **Create tunnel** and **Add connector** actions.
 
 ## Connector enrollment
 
@@ -62,7 +71,7 @@ go build -o tunnel-client ./client
 Zoraxy 3.2.0+ is recommended. Add this repository's plugin index as a community source:
 
 ```text
-https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/directories/index2.json
+https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel-enhanced/refs/heads/main/directories/index2.json
 ```
 
 The plugin store handles the correct binary for the Zoraxy host platform.

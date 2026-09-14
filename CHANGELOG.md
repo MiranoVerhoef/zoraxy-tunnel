@@ -1,6 +1,21 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 14.09.26
+### Added
+- First-run plugin wizard for fresh installations, covering Control Node configuration, first tunnel creation, client installation and connection verification.
+- Persistent setup state so **Setup later** suppresses the automatic first-run wizard while keeping it available from Settings.
+- Connection-aware connector setup that checks live telemetry every two seconds and only enables **Continue** when the expected connector ID is online.
+- Optional redundancy step after a connector comes online, allowing additional connectors to be enrolled immediately without invalidating existing credentials.
+- A reusable guided connector setup flow for both **Create tunnel** and **Add connector**.
+
+### Changed
+- Installation commands are collapsed by default instead of opening a large Compose block immediately.
+- Manual setups expose collapsed Compose, Docker run and standalone client options; Automatic mode focuses on the generated Compose stack with authenticated WUD updater configuration.
+- The repository was renamed to `MiranoVerhoef/zoraxy-tunnel-enhanced`; active plugin metadata, store download links, release URLs, documentation links and the community source URL now use the renamed repository.
+- The existing `ghcr.io/miranoverhoef/zoraxy-tunnel-client` image name and plugin ID remain unchanged for backwards compatibility.
+- Plugin and client version bumped to v1.13.0.
+
 ## [1.12.0] - 14.09.26
 ### Fixed
 - Restore automatic Docker updater startup with WUD 9.x by generating the required administrator credentials in every new Automatic Compose configuration.
