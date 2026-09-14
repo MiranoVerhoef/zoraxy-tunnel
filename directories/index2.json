@@ -1,16 +1,16 @@
 [
   {
-    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel/refs/heads/main/icon.png?v=1.12.0",
+    "IconPath": "https://raw.githubusercontent.com/MiranoVerhoef/zoraxy-tunnel-enhanced/refs/heads/main/icon.png?v=1.13.0",
     "PluginIntroSpect": {
       "id": "com.miranoverhoef.zoraxy-tunnel",
       "name": "Zoraxy Tunnel Enhanced",
       "author": "Mirano Verhoef",
       "author_contact": "https://github.com/MiranoVerhoef",
       "description": "Secure self-hosted reverse tunneling for Zoraxy with automated routing, redundant connectors, service health monitoring, and TLS controls.",
-      "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel",
+      "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced",
       "type": 1,
       "version_major": 1,
-      "version_minor": 12,
+      "version_minor": 13,
       "version_patch": 0,
       "static_capture_paths": null,
       "static_capture_ingress": "",
@@ -30,13 +30,13 @@
       ]
     },
     "DownloadURLs": {
-      "linux_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_linux_amd64",
-      "linux_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_linux_arm64",
-      "linux_arm": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_linux_arm",
-      "darwin_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_darwin_amd64",
-      "darwin_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_darwin_arm64",
-      "windows_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_windows_amd64.exe",
-      "windows_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel/releases/latest/download/zoraxy-tunnel_windows_arm64.exe"
+      "linux_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced/releases/latest/download/zoraxy-tunnel_linux_amd64",
+      "linux_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced/releases/latest/download/zoraxy-tunnel_linux_arm64",
+      "linux_arm": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced/releases/latest/download/zoraxy-tunnel_linux_arm",
+      "darwin_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced/releases/latest/download/zoraxy-tunnel_darwin_amd64",
+      "darwin_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced/releases/latest/download/zoraxy-tunnel_darwin_arm64",
+      "windows_amd64": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced/releases/latest/download/zoraxy-tunnel_windows_amd64.exe",
+      "windows_arm64": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced/releases/latest/download/zoraxy-tunnel_windows_arm64.exe"
     }
   }
 ]
