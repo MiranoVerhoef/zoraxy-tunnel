@@ -125,8 +125,19 @@ func (c *controlServer) authorize(token string) (string, bool) {
 	}
 	h := hashToken(token)
 	for _, t := range c.store.snapshot() {
-		if t.Enabled && t.TokenHash == h {
+		if !t.Enabled {
+			continue
+		}
+		// Keep the original tunnel credential valid for backwards compatibility.
+		if t.TokenHash == h {
 			return t.ID, true
+		}
+		// Additional connector credentials are additive: creating a new connector
+		// never invalidates clients already using the original or another token.
+		for _, cred := range t.ConnectorCredentials {
+			if cred.Enabled && cred.TokenHash == h {
+				return t.ID, true
+			}
 		}
 	}
 	return "", false
