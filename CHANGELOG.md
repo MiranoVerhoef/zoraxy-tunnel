@@ -1,6 +1,19 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 14.09.26
+### Added
+- Automatic service health checks through the active tunnel connector every 30 seconds.
+- Per-service Healthy, Unhealthy, Offline and Disabled status in the tunnel UI, including response latency when available.
+- Health checks use the same target and TLS verification settings as real tunneled traffic and treat reachable HTTP 1xx-4xx responses as healthy.
+- Persistent Activity view for connector lifecycle, preferred-connector changes, authentication failures and service health transitions.
+- Activity history is stored locally in `events.json` and retains up to 500 events across plugin restarts.
+
+### Changed
+- Health probes follow the current Primary connector and therefore automatically follow failover/failback behavior.
+- Plugin and client version bumped to v1.9.0 while keeping tunnel credentials and connector IDs unchanged.
+- Product description now highlights redundant connectors and service health monitoring.
+
 ## [1.8.0] - 09.09.26
 ### Added
 - Multiple simultaneous connectors per tunnel for active/standby redundancy using one persistent tunnel credential.
