@@ -36,7 +36,10 @@ openCreateTunnel=function(){
 const _v111CreateTunnel=createTunnel;
 createTunnel=async function(){
   CURRENT_UPDATE_MODE=FIRST_UPDATE_MODE;
-  return _v111CreateTunnel();
+  const result=await _v111CreateTunnel();
+  configureCommandTabs();
+  refreshCommands();
+  return result;
 };
 
 function v111SafeContainerName(cid){
