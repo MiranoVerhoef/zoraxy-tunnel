@@ -4,10 +4,10 @@
   "author": "Mirano Verhoef",
   "author_contact": "https://github.com/MiranoVerhoef",
   "description": "Secure self-hosted reverse tunneling for Zoraxy with automated routing, redundant connectors, service health monitoring, and TLS controls.",
-  "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel",
+  "url": "https://github.com/MiranoVerhoef/zoraxy-tunnel-enhanced",
   "type": 1,
   "version_major": 1,
-  "version_minor": 12,
+  "version_minor": 13,
   "version_patch": 0,
   "ui_path": "/ui",
   "permitted_api_endpoints": [
