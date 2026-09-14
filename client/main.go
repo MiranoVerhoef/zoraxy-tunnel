@@ -22,7 +22,7 @@ import (
 	"zoraxy-tunnel/wire"
 )
 
-const ( clientVersion="v1.8.0"; defaultControlPort="9443"; dialTimeout=10*time.Second; initialBackoff=time.Second; maxBackoff=30*time.Second )
+const ( clientVersion="v1.9.0"; defaultControlPort="9443"; dialTimeout=10*time.Second; initialBackoff=time.Second; maxBackoff=30*time.Second )
 
 func main(){
 	server:=flag.String("server","","tunnel server hostname or host:port (port 9443 is used when omitted)"); token:=flag.String("token","","tunnel token (from the dashboard)"); fingerprint:=flag.String("fingerprint","","expected SHA256 cert fingerprint, e.g. AB:CD:EF:..."); connectorID:=flag.String("connector-id","","stable unique connector id used for redundancy and preferred-connector failback"); showVersion:=flag.Bool("version",false,"print tunnel client version and exit"); flag.Parse()
