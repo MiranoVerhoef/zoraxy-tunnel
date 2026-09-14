@@ -32,6 +32,7 @@ connectorSetupIdChanged=function(value){
     if(pre)pre.textContent=CONNECT_SETUP.commands[method]||'';
   });
   updateConnectorWaitUI();
+  if(!CONNECT_SETUP.poll)startConnectorSetupPolling();
 };
 
 openFirstRunWizard=async function(){
