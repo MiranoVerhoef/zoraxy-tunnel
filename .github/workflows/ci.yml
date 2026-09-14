@@ -4,8 +4,12 @@ on:
   push:
     branches:
       - main
-      - 'release/**'
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -15,12 +19,15 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
+
       - name: Go test
         run: go test ./...
+
       - name: Build plugin and client
         run: |
           go build -o /tmp/zoraxy-tunnel .
           go build -o /tmp/tunnel-client ./client
+
       - name: Validate browser JavaScript
         run: |
           node --check web/app.js
@@ -28,13 +35,23 @@ jobs:
           node --check web/enrollment.js
           node --check web/health.js
           node --check web/v111.js
+
       - name: Validate store metadata
+        shell: bash
         run: |
-          jq -e --slurpfile intro .introspect '
+          set -euo pipefail
+          INTRO_VERSION=$(jq -r '"v\(.version_major).\(.version_minor).\(.version_patch)"' .introspect)
+          STORE_VERSION=$(jq -r '.[0].PluginIntroSpect | "v\(.version_major).\(.version_minor).\(.version_patch)"' directories/index2.json)
+          echo "Runtime/store metadata check: .introspect=${INTRO_VERSION}, store=${STORE_VERSION}"
+
+          if ! jq -e --slurpfile intro .introspect '
             .[0].PluginIntroSpect.id == $intro[0].id and
             .[0].PluginIntroSpect.name == $intro[0].name and
             .[0].PluginIntroSpect.author == $intro[0].author and
             .[0].PluginIntroSpect.version_major == $intro[0].version_major and
             .[0].PluginIntroSpect.version_minor == $intro[0].version_minor and
             .[0].PluginIntroSpect.version_patch == $intro[0].version_patch
-          ' directories/index2.json
+          ' directories/index2.json >/dev/null; then
+            echo "::error title=Plugin metadata mismatch::.introspect and directories/index2.json do not match. Update both version/identity metadata files in the same release change."
+            exit 1
+          fi
