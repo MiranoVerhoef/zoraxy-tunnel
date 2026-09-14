@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.10.2] - 14.09.26
+### Fixed
+- Replace the oversized/cropped plugin icon with a compact padded square asset suitable for Zoraxy plugin and sidebar rendering.
+- Serve the dashboard icon locally from the embedded plugin instead of loading it from raw GitHub.
+- Cache-bust dashboard CSS, JavaScript and icon assets per plugin version so updates do not leave stale UI resources in the browser cache.
+
 ## [1.10.0] - 14.09.26
 ### Added
 - Non-destructive **Add connector** flow for adding redundant hosts without rotating or invalidating credentials already in use.
