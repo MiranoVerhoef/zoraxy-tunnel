@@ -21,8 +21,8 @@ const (
 
 const (
 	verMajor = 1
-	verMinor = 10
-	verPatch = 3
+	verMinor = 11
+	verPatch = 0
 )
 
 var pluginVersion = fmt.Sprintf("v%d.%d.%d", verMajor, verMinor, verPatch)
@@ -94,6 +94,7 @@ func main() {
 	mux.HandleFunc("/ui/api/client-stats", api.handleClientStats)
 	mux.HandleFunc("/ui/api/connectors/preferred", api.handlePreferredConnector)
 	mux.HandleFunc("/ui/api/connectors/add", api.handleAddConnector)
+	mux.HandleFunc("/ui/api/connectors/update", api.handleConnectorUpdate)
 	mux.HandleFunc("/ui/api/health", api.handleHealth)
 	mux.HandleFunc("/ui/api/events", api.handleEvents)
 	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web", "/ui")
