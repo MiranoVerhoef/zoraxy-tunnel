@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 14.09.26
+### Added
+- Non-destructive **Add connector** flow for adding redundant hosts without rotating or invalidating credentials already in use.
+- Independent per-connector credentials. The original tunnel credential remains valid for backwards compatibility, while every additional connector can receive its own one-time token.
+- Connector enrollment wizard with two Docker update modes: **Automatic updates** and **Manual updates**.
+- Automatic-update Compose option using a dedicated What's Up Docker (WUD) sidecar. Only the updater receives `/var/run/docker.sock`; the tunnel client itself does not.
+- Explicit Docker-socket security warning in the enrollment wizard.
+- New Zoraxy-inspired bidirectional tunnel icon based closely on the original Zoraxy mark.
+
+### Changed
+- Connector setup now guides users through connector ID and update behavior before showing installation commands.
+- Automatic mode tracks the mutable `:latest` client image by digest and recreates the connector when a new image is available.
+- Plugin and client version bumped to v1.10.0.
+
 ## [1.9.0] - 14.09.26
 ### Added
 - Automatic service health checks through the active tunnel connector every 30 seconds.
