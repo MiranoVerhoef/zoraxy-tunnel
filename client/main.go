@@ -22,7 +22,7 @@ import (
 	"zoraxy-tunnel/wire"
 )
 
-const ( clientVersion="v1.12.0"; defaultControlPort="9443"; dialTimeout=10*time.Second; initialBackoff=time.Second; maxBackoff=30*time.Second )
+const ( clientVersion="v1.13.0"; defaultControlPort="9443"; dialTimeout=10*time.Second; initialBackoff=time.Second; maxBackoff=30*time.Second )
 
 func main(){
 	server:=flag.String("server","","tunnel server hostname or host:port (port 9443 is used when omitted)"); token:=flag.String("token","","tunnel token (from the dashboard)"); fingerprint:=flag.String("fingerprint","","expected SHA256 cert fingerprint, e.g. AB:CD:EF:..."); connectorID:=flag.String("connector-id","","stable unique connector id used for redundancy and preferred-connector failback"); showVersion:=flag.Bool("version",false,"print tunnel client version and exit"); flag.Parse()
@@ -42,5 +42,5 @@ func run(server,token,wantFingerprint,connectorID string)(bool,error){
 }
 
 func verifyFingerprint(want string)func([][]byte,[][]*x509.Certificate)error{return func(rawCerts [][]byte,_ [][]*x509.Certificate)error{if len(rawCerts)==0{return errors.New("no peer certificate")};sum:=sha256.Sum256(rawCerts[0]);got:=strings.ToUpper(hex.EncodeToString(sum[:]));if got!=want{return fmt.Errorf("fingerprint mismatch (got %s)",formatColon(got))};return nil}}
-func normalizeFingerprint(s string)string{s=strings.TrimSpace(s);s=strings.ReplaceAll(s,":","");s=strings.ReplaceAll(s," ","");return strings.ToUpper(s)}
+func normalizeFingerprint(s string)string{s:=strings.TrimSpace(s);s=strings.ReplaceAll(s,":","");s=strings.ReplaceAll(s," ","");return strings.ToUpper(s)}
 func formatColon(hexStr string)string{var b strings.Builder;for i:=0;i<len(hexStr);i+=2{if i>0{b.WriteByte(':')};b.WriteString(hexStr[i:i+2])};return b.String()}
