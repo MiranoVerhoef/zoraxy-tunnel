@@ -93,6 +93,7 @@ func main() {
 	mux.HandleFunc("/ui/api/services/action", api.handleServiceAction)
 	mux.HandleFunc("/ui/api/client-stats", api.handleClientStats)
 	mux.HandleFunc("/ui/api/connectors/preferred", api.handlePreferredConnector)
+	mux.HandleFunc("/ui/api/connectors/add", api.handleAddConnector)
 	mux.HandleFunc("/ui/api/health", api.handleHealth)
 	mux.HandleFunc("/ui/api/events", api.handleEvents)
 	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web", "/ui")
