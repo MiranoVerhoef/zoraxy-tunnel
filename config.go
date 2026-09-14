@@ -28,15 +28,25 @@ type Service struct {
 	Enabled        bool   `json:"enabled"`
 }
 
+type ConnectorCredential struct {
+	ID          string    `json:"id"`
+	ConnectorID string    `json:"connector_id"`
+	TokenHash   string    `json:"token_hash"`
+	TokenHint   string    `json:"token_hint"`
+	Created     time.Time `json:"created"`
+	Enabled     bool      `json:"enabled"`
+}
+
 type Tunnel struct {
-	ID                   string    `json:"id"`
-	Name                 string    `json:"name"`
-	TokenHash            string    `json:"token_hash"`
-	TokenHint            string    `json:"token_hint"`
-	PreferredConnectorID string    `json:"preferred_connector_id,omitempty"`
-	Created              time.Time `json:"created"`
-	Enabled              bool      `json:"enabled"`
-	Services             []Service `json:"services"`
+	ID                   string                `json:"id"`
+	Name                 string                `json:"name"`
+	TokenHash            string                `json:"token_hash"`
+	TokenHint            string                `json:"token_hint"`
+	ConnectorCredentials []ConnectorCredential `json:"connector_credentials,omitempty"`
+	PreferredConnectorID string                `json:"preferred_connector_id,omitempty"`
+	Created              time.Time             `json:"created"`
+	Enabled              bool                  `json:"enabled"`
+	Services             []Service             `json:"services"`
 }
 
 type configFile struct {
