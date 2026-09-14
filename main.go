@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
 	zp "zoraxy-tunnel/zoraxy_plugin"
 )
 
@@ -20,7 +21,7 @@ const (
 
 const (
 	verMajor = 1
-	verMinor = 8
+	verMinor = 9
 	verPatch = 0
 )
 
@@ -31,7 +32,7 @@ var pluginSpec = &zp.IntroSpect{
 	Name:          "Zoraxy Tunnel Enhanced",
 	Author:        "Mirano Verhoef",
 	AuthorContact: "https://github.com/MiranoVerhoef",
-	Description:   "Secure self-hosted reverse tunneling for Zoraxy with automated routing, managed clients, redundant connectors, and granular TLS controls.",
+	Description:   "Secure self-hosted reverse tunneling for Zoraxy with automated routing, redundant connectors, service health monitoring, and TLS controls.",
 	URL:           "https://github.com/MiranoVerhoef/zoraxy-tunnel",
 	Type:          zp.PluginType_Utilities,
 	VersionMajor:  verMajor,
@@ -56,20 +57,33 @@ func main() {
 		config = &zp.ConfigureSpec{Port: 9699}
 	}
 	zPort := config.ZoraxyPort
-	if zPort == 0 { zPort = 8000 }
+	if zPort == 0 {
+		zPort = 8000
+	}
 	uiPort := config.Port
 	pluginDir := workingDir()
 	log.Printf("[tunnel] data dir: %s", pluginDir)
+	appEvents.setPath(filepath.Join(pluginDir, "events.json"))
+
 	if icon, err := webFS.ReadFile("icon.png"); err == nil {
 		iconPath := filepath.Join(filepath.Dir(exePath()), "icon.png")
-		if err := os.WriteFile(iconPath, icon, 0644); err != nil { log.Printf("[tunnel] icon write: %v", err) }
+		if err := os.WriteFile(iconPath, icon, 0644); err != nil {
+			log.Printf("[tunnel] icon write: %v", err)
+		}
 	}
 	certs := newCertManager(pluginDir)
-	if err := certs.LoadOrCreate(); err != nil { log.Fatalf("[tunnel] cert: %v", err) }
+	if err := certs.LoadOrCreate(); err != nil {
+		log.Fatalf("[tunnel] cert: %v", err)
+	}
 	log.Printf("[tunnel] cert fingerprint: %s", certs.Fingerprint())
 	store := newStore(pluginDir)
-	if err := store.Load(); err != nil { log.Printf("[tunnel] config load: %v", err) }
+	if err := store.Load(); err != nil {
+		log.Printf("[tunnel] config load: %v", err)
+	}
 	registry := newSessionRegistry()
+	appHealth = newHealthManager(store, registry)
+	appHealth.start()
+
 	api := &apiServer{store: store, registry: registry, certs: certs, zPort: zPort, apiKey: config.APIKey, ingressPort: ingressPort, controlPort: controlPort, uiPort: uiPort, version: pluginVersion}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ui/api/status", api.handleStatus)
@@ -79,26 +93,41 @@ func main() {
 	mux.HandleFunc("/ui/api/services/action", api.handleServiceAction)
 	mux.HandleFunc("/ui/api/client-stats", api.handleClientStats)
 	mux.HandleFunc("/ui/api/connectors/preferred", api.handlePreferredConnector)
+	mux.HandleFunc("/ui/api/health", api.handleHealth)
+	mux.HandleFunc("/ui/api/events", api.handleEvents)
 	ui := zp.NewPluginEmbedUIRouter(pluginSpec.ID, &webFS, "web", "/ui")
 	ui.AttachHandlerToMux(mux)
 	ui.RegisterTerminateHandler(func() { log.Println("[tunnel] bye") }, mux)
 	control := newControlServer(certs.TLSConfig(), store, registry)
-	go func() { if err := control.listenAndServe(fmt.Sprintf("0.0.0.0:%d", controlPort)); err != nil { log.Printf("[tunnel] control: %v", err) } }()
+	go func() {
+		if err := control.listenAndServe(fmt.Sprintf("0.0.0.0:%d", controlPort)); err != nil {
+			log.Printf("[tunnel] control: %v", err)
+		}
+	}()
 	ingress := newIngressServer(store, registry)
-	go func() { if err := ingress.listenAndServe(fmt.Sprintf("127.0.0.1:%d", ingressPort)); err != nil { log.Printf("[tunnel] ingress: %v", err) } }()
+	go func() {
+		if err := ingress.listenAndServe(fmt.Sprintf("127.0.0.1:%d", ingressPort)); err != nil {
+			log.Printf("[tunnel] ingress: %v", err)
+		}
+	}()
+	appEvents.add("info", "plugin.start", "", "", "", "Zoraxy Tunnel Enhanced "+pluginVersion+" started")
 	log.Printf("[tunnel] ui :%d  ingress :%d  control :%d", uiPort, ingressPort, controlPort)
 	log.Fatalf("[tunnel] %v", http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", uiPort), mux))
 }
 
 func exePath() string {
 	if exe, err := os.Executable(); err == nil {
-		if resolved, err := filepath.EvalSymlinks(exe); err == nil { return resolved }
+		if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+			return resolved
+		}
 		return exe
 	}
 	return "."
 }
 
 func workingDir() string {
-	if wd, err := os.Getwd(); err == nil { return wd }
+	if wd, err := os.Getwd(); err == nil {
+		return wd
+	}
 	return filepath.Dir(exePath())
 }
