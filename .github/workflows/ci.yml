@@ -25,6 +25,7 @@ jobs:
         run: |
           node --check web/app.js
           node --check web/connectors.js
+          node --check web/enrollment.js
           node --check web/health.js
       - name: Validate store metadata
         run: |
